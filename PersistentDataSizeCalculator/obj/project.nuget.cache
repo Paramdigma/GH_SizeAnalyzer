@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "MgpZjXntFEDDhxqpxtl3yU8sAHJ+J17y8MenPhkQvnSjLseqoCVELKK9ZPVPveLBuPA4OWGzcvtnlGx1uRlvAw==",
+  "success": true,
+  "projectFilePath": "E:\\GitHub\\PersistentDataSizeCalculator\\PersistentDataSizeCalculator\\PersistentDataSizeCalculator.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\chris\\.nuget\\packages\\grasshopper\\7.13.21348.13001\\grasshopper.7.13.21348.13001.nupkg.sha512",
+    "C:\\Users\\chris\\.nuget\\packages\\rhinocommon\\7.13.21348.13001\\rhinocommon.7.13.21348.13001.nupkg.sha512"
+  ],
+  "logs": []
+}
