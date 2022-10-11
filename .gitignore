@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/GrasshopperPersistentDataSizeCalculator/obj
+/.vs/GrasshopperPersistentDataSizeCalculator/FileContentIndex
+/.idea/.idea.PersistentDataSizeCalculator/.idea
+/.idea/.idea.GrasshopperPersistentDataSizeCalculator/.idea

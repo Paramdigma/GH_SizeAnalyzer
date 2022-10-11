@@ -6,7 +6,6 @@
     <Title>PersistentDataSizeCalculator</Title>
     <Description>Description of PersistentDataSizeCalculator</Description>
     <TargetExt>.gha</TargetExt>
-    <RootNamespace>PersistentDataSizeCalculator</RootNamespace>
   </PropertyGroup>
   
   <ItemGroup>

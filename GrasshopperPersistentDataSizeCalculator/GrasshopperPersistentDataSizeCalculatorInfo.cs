@@ -3,9 +3,9 @@ using Grasshopper.Kernel;
 using System;
 using System.Drawing;
 
-namespace PersistentDataSizeCalculator
+namespace GrasshopperPersistentDataSizeCalculator
 {
-    public class PersistentDataSizeCalculatorInfo : GH_AssemblyInfo
+    public class GrasshopperPersistentDataSizeCalculatorInfo : GH_AssemblyInfo
     {
         public override string Name => "GrasshopperPersistentDataSizeCalculator";
 

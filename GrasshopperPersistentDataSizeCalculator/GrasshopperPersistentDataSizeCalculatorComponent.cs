@@ -15,9 +15,9 @@ using System.IO;
 using GH_IO;
 using Grasshopper.Kernel.Parameters;
 
-namespace PersistentDataSizeCalculator
+namespace GrasshopperPersistentDataSizeCalculator
 {
-    public class PersistentDataSizeCalculatorComponent : GH_Component
+    public class GrasshopperPersistentDataSizeCalculatorComponent : GH_Component
     {
         /// <summary>
         /// Each implementation of GH_Component must provide a public 
@@ -26,7 +26,7 @@ namespace PersistentDataSizeCalculator
         /// Subcategory the panel. If you use non-existing tab or panel names, 
         /// new tabs/panels will automatically be created.
         /// </summary>
-        public PersistentDataSizeCalculatorComponent()
+        public GrasshopperPersistentDataSizeCalculatorComponent()
           : base("GrasshopperPersistentDataSizeCalculator", "PDC",
             "Calculates all persistent data size",
             "Params", "Scripts")
