@@ -27,7 +27,7 @@ namespace PersistentDataSizeCalculator
         /// new tabs/panels will automatically be created.
         /// </summary>
         public PersistentDataSizeCalculatorComponent()
-          : base("PersistentDataSizeCalculator", "PDC",
+          : base("GrasshopperPersistentDataSizeCalculator", "PDC",
             "Calculates all persistent data size",
             "Params", "Scripts")
         {

@@ -7,7 +7,7 @@ namespace PersistentDataSizeCalculator
 {
     public class PersistentDataSizeCalculatorInfo : GH_AssemblyInfo
     {
-        public override string Name => "PersistentDataSizeCalculator";
+        public override string Name => "GrasshopperPersistentDataSizeCalculator";
 
         //Return a 24x24 pixel bitmap to represent this GHA library.
         public override Bitmap Icon => null;
