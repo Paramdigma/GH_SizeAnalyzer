@@ -55,6 +55,7 @@ namespace GrasshopperPersistentDataSizeCalculator
         /// to store data in output parameters.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+             _document = Grasshopper.Instances.ActiveCanvas.Document;
             var persistentParams = GetAllParamsInDoc().Where(param=> param.DataType == GH_ParamData.local).ToList();
             var paramSizes = persistentParams.Select(param => GetParamSize(param)).ToList();
             // if()
@@ -66,7 +67,7 @@ namespace GrasshopperPersistentDataSizeCalculator
             DA.SetData(0, stringBuilder.ToString());
         }
 
-        private GH_Document _document = Grasshopper.Instances.ActiveCanvas.Document;
+        private GH_Document _document { get; set; }
         public IEnumerable<IGH_Param> GetAllParamsInDoc()
         {
             var objects = _document.Objects;
