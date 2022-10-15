@@ -6,12 +6,19 @@
     <Title>PersistentDataSizeCalculator</Title>
     <Description>Description of PersistentDataSizeCalculator</Description>
     <TargetExt>.gha</TargetExt>
+    <RhinoMacLauncher>/Applications/Rhino 7.app</RhinoMacLauncher>
   </PropertyGroup>
   
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="7.13.21348.13001" IncludeAssets="compile;build" />
   </ItemGroup>
   
+  <ItemGroup>
+    <None Remove="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
   <PropertyGroup Condition="$(Configuration) == 'Debug' AND $([MSBuild]::IsOSPlatform(Windows))">
     <StartProgram>C:\Program Files\Rhino 7\System\Rhino.exe</StartProgram>
     <StartArguments></StartArguments>

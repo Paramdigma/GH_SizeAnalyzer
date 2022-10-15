@@ -13,14 +13,14 @@ namespace GrasshopperPersistentDataSizeCalculator
         public override Bitmap Icon => null;
 
         //Return a short string describing the purpose of this GHA library.
-        public override string Description => "";
+        public override string Description => "Grasshopper Tool to warn of big internalized data inside nodes.";
 
         public override Guid Id => new Guid("95323AB1-7AD7-48FB-8583-AEEB21987B89");
 
         //Return a string identifying you or your company.
-        public override string AuthorName => "";
+        public override string AuthorName => "Paramdigma";
 
         //Return a string representing your preferred contact details.
-        public override string AuthorContact => "";
+        public override string AuthorContact => "https://github.com/Paramdigma";
     }
 }
