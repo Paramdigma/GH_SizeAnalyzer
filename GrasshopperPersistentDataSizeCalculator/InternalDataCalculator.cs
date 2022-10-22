@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GH_IO.Serialization;
 using Grasshopper.Kernel;
+using Rhino;
 
 namespace GrasshopperPersistentDataSizeCalculator
 {
@@ -41,6 +42,10 @@ namespace GrasshopperPersistentDataSizeCalculator
         });
     }
 
+    public static double GetTotal()
+    {
+      return _resultsCache.Where(pair => pair.Value.IsCompleted).Sum(pair => pair.Value.Result);
+    }
     public static void Add(IGH_Param param)
     {
       if (_resultsCache.ContainsKey(param.InstanceGuid))
@@ -89,7 +94,9 @@ namespace GrasshopperPersistentDataSizeCalculator
     private static async Task<double> GetParamDataSizeAsync(IGH_Param param,
       SerializationType serializationType = SerializationType.Binary)
     {
-      return await Task.Run(() => GetParamDataSize(param, serializationType), CancelTokenSource.Token);
+      var task =  Task.Run(() => GetParamDataSize(param, serializationType), CancelTokenSource.Token);
+      task.ContinueWith(task1 => RhinoApp.InvokeOnUiThread((Action)delegate { Grasshopper.Instances.RedrawCanvas(); }  ));
+      return await task;
     }
 
     private static double GetParamDataSize(IGH_Param param,

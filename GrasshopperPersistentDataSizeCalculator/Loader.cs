@@ -127,7 +127,15 @@ namespace GrasshopperPersistentDataSizeCalculator
     private void OnObjectChanged(IGH_DocumentObject sender, GH_ObjectChangedEventArgs e)
     {
       if (sender is IGH_Param p && e.Type == GH_ObjectEventType.Sources)
-          InternalDataCalculator.Add(p);
+        switch (p.DataType)
+        {
+          case GH_ParamData.local:
+            InternalDataCalculator.Add(p);
+            break;
+          default:
+            InternalDataCalculator.Remove(p);
+            break;
+        }
     }
 
     public readonly SizeAnalyzerWidget Widget = new SizeAnalyzerWidget();

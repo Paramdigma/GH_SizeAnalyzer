@@ -17,7 +17,7 @@ namespace GrasshopperPersistentDataSizeCalculator
   public class SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
   {
     private static bool _showWidget = Instances.Settings.GetValue("Widget.SizeAnalyzer.Show", true);
-    private static double _sizeThreshold = Instances.Settings.GetValue("Widget.SizeAnalyzer.Threshold", 5);
+    private static double _sizeThreshold = Instances.Settings.GetValue("Widget.SizeAnalyzer.Threshold", 0.5);
 
     public override bool Visible
     {
@@ -91,16 +91,18 @@ namespace GrasshopperPersistentDataSizeCalculator
       var drawableParams = GetAllParamsWithLocalData(canvas.Document);
       foreach (var p in drawableParams)
       {
-        if (GH_Canvas.ZoomFadeLow == 0)
-          DrawParamIcon_ZoomedOut(canvas, p);
-        else
-          DrawParamIcon(canvas, p);
+        var res = InternalDataCalculator.Get(p);
+        if(res.IsCompleted && res.Result > _sizeThreshold)
+          if (GH_Canvas.ZoomFadeLow == 0)
+            DrawParamIcon_ZoomedOut(canvas, p);
+          else
+            DrawParamIcon(canvas, p);
       }
     }
 
     private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
     {
-      var task = InternalDataCalculator.Get(p);
+      //var task = InternalDataCalculator.Get(p);
 
       var bounds = p.Attributes.Bounds;
       var radius = 5;
@@ -116,7 +118,7 @@ namespace GrasshopperPersistentDataSizeCalculator
       var whitesmoke = new Pen(Color.WhiteSmoke);
       whitesmoke.Width = 2;
       canvas.Graphics.DrawEllipse(whitesmoke, r);
-      canvas.Graphics.FillEllipse(task.IsCompleted ? Brushes.Red : Brushes.Blue, r);
+      canvas.Graphics.FillEllipse(true ? Brushes.Red : Brushes.Blue, r);
 
       var font = new Font(FontFamily.GenericMonospace, radius, FontStyle.Bold);
       var textPosition = new PointF(center.X, center.Y + 1 - radius / 2);
@@ -145,7 +147,7 @@ namespace GrasshopperPersistentDataSizeCalculator
     protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
       Rectangle controlFrame, RectangleF canvasFrame)
     {
-      //if (Instances.ActiveCanvas.Document == null) return;
+      if (Instances.ActiveCanvas.Document == null) return;
 
       var graphics = canvas.Graphics;
       var solidBrush = new SolidBrush(Color.Red);
@@ -164,9 +166,11 @@ namespace GrasshopperPersistentDataSizeCalculator
 
       var x = controlAnchor.X - controlFrame.Width / 2;
       var y = controlAnchor.Y - controlFrame.Height / 2;
+      
       graphics.DrawString("Total internal size", new Font(FontFamily.GenericSansSerif, 10), blackBrush, x,
         y += Global_Proc.UiAdjust(5));
-      graphics.DrawString("Total internal size", new Font(FontFamily.GenericSansSerif, 20), blackBrush, x,
+      
+      graphics.DrawString(Math.Round(InternalDataCalculator.GetTotal(),3) + "mb", new Font(FontFamily.GenericSansSerif, 20), blackBrush, x,
         y + Global_Proc.UiAdjust(15));
       // Once done, we reset the transform of the canvas.
       graphics.Transform = transform;
