@@ -82,7 +82,6 @@ namespace GrasshopperPersistentDataSizeCalculator
             checkShow.Checked = SizeAnalyzerWidget.SharedVisible;
         }
 
-        [field: AccessedThroughProperty("checkShow")]
         internal virtual CheckBox checkShow { get; [MethodImpl(MethodImplOptions.Synchronized)] set; }
 
         [field: AccessedThroughProperty("Panel1")]

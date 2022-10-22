@@ -7,6 +7,7 @@
     <Description>Description of PersistentDataSizeCalculator</Description>
     <TargetExt>.gha</TargetExt>
     <RhinoMacLauncher>/Applications/Rhino 7.app</RhinoMacLauncher>
+    <LangVersion>8</LangVersion>
   </PropertyGroup>
   
   <ItemGroup>
