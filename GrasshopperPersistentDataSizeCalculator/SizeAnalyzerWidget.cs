@@ -17,7 +17,15 @@ namespace GrasshopperPersistentDataSizeCalculator
   public class SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
   {
     private static bool _showWidget = Instances.Settings.GetValue("Widget.SizeAnalyzer.Show", true);
-    private static double _sizeThreshold = Instances.Settings.GetValue("Widget.SizeAnalyzer.Threshold", 0.5);
+
+    private static double _sizeThreshold
+    {
+      get => Instances.Settings.GetValue("Widget.SizeAnalyzer.Threshold", 0.5);
+      set {
+        Instances.Settings.SetValue("Widget.SizeAnalyzer.Threshold", value);
+        Instances.InvalidateCanvas();
+      }
+    }
 
     public override bool Visible
     {
@@ -64,7 +72,7 @@ namespace GrasshopperPersistentDataSizeCalculator
         _showWidget = value;
         Instances.Settings.SetValue("Widget.SizeAnalyzer.Show", value);
         WidgetVisibleChanged?.Invoke();
-        Instances.RedrawCanvas();
+        Instances.InvalidateCanvas();
       }
     }
 
@@ -92,7 +100,7 @@ namespace GrasshopperPersistentDataSizeCalculator
       foreach (var p in drawableParams)
       {
         var res = InternalDataCalculator.Get(p);
-        if(res.IsCompleted && res.Result > _sizeThreshold)
+        if(res != null && res.IsCompleted && res.Result > _sizeThreshold)
           if (GH_Canvas.ZoomFadeLow == 0)
             DrawParamIcon_ZoomedOut(canvas, p);
           else
@@ -138,10 +146,11 @@ namespace GrasshopperPersistentDataSizeCalculator
     {
       base.AppendToMenu(menu);
       GH_DocumentObject.Menu_AppendSeparator(menu);
-      GH_DocumentObject.Menu_AppendItem(menu, "1mb", null, null);
-      GH_DocumentObject.Menu_AppendItem(menu, "2mb", null, null);
-      GH_DocumentObject.Menu_AppendItem(menu, "5mb", null, null);
-      GH_DocumentObject.Menu_AppendItem(menu, "10mb", null, null);
+      GH_DocumentObject.Menu_AppendItem(menu, "0.5mb", (e, a) => _sizeThreshold = 0.5, null);
+      GH_DocumentObject.Menu_AppendItem(menu, "1mb", (e, a) => _sizeThreshold = 1, null);
+      GH_DocumentObject.Menu_AppendItem(menu, "2mb", (e, a) => _sizeThreshold = 2, null);
+      GH_DocumentObject.Menu_AppendItem(menu, "5mb", (e, a) => _sizeThreshold = 5, null);
+      GH_DocumentObject.Menu_AppendItem(menu, "10mb", (e, a) => _sizeThreshold = 10, null);
     }
 
     protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
