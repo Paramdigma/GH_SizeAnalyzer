@@ -95,7 +95,7 @@ namespace GrasshopperPersistentDataSizeCalculator
       SerializationType serializationType = SerializationType.Binary)
     {
       var task =  Task.Run(() => GetParamDataSize(param, serializationType), CancelTokenSource.Token);
-      task.ContinueWith(task1 => RhinoApp.InvokeOnUiThread((Action)delegate { Grasshopper.Instances.RedrawCanvas(); }  ));
+      task.ContinueWith(_ => RhinoApp.InvokeOnUiThread((Action)Grasshopper.Instances.InvalidateCanvas));
       return await task;
     }
 
