@@ -9,3 +9,5 @@
 **/.vs
 **/.idea
 GrasshopperPersistentDataSizeCalculator.sln.DotSettings.user
+
+.DS_Store
