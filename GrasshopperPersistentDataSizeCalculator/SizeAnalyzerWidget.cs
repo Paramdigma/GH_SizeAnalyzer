@@ -102,7 +102,19 @@ namespace SizeAnalyzer
 
         public override bool TooltipEnabled => true;
 
-        public List<IGH_Param> DrawnIcons = new List<IGH_Param>();
+    public static GH_LocateBigInternalDataObjectsDialog SearchDialog
+    {
+      get
+      {
+        if(_searchDialog == null)
+          _searchDialog = new GH_LocateBigInternalDataObjectsDialog();
+        _searchDialog.Canvas = Instances.ActiveCanvas;
+        _searchDialog.FormClosed += (s, e) => _searchDialog = null;
+        return _searchDialog;
+      }
+    }
+
+    public List<IGH_Param> DrawnIcons = new List<IGH_Param>();
 
         public override void Render(GH_Canvas canvas)
         {
@@ -227,12 +239,13 @@ namespace SizeAnalyzer
 
       GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog",(o,e) =>
       {
-        var dialog = new GH_LocateBigInternalDataObjectsDialog();
-        dialog.Show();
-        dialog.Canvas = Instances.ActiveCanvas;
+        SearchDialog.Show();
+        SearchDialog.Focus();
       });
 
     }
+
+    private static GH_LocateBigInternalDataObjectsDialog _searchDialog;
 
     /// <summary>
     /// Draws the fixed position part of the Widget

@@ -4,15 +4,12 @@ using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Geometry;
 using Grasshopper.Kernel.Geometry.Delaunay;
-using Grasshopper.My.Resources;
 using Grasshopper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Runtime.CompilerServices;
 using System.Windows.Forms;
 using Grasshopper.GUI;
 using System.Linq;
@@ -95,7 +92,12 @@ namespace SizeAnalyzer
       MaximizeBox = false;
       MinimizeBox = false;
       Name = nameof(GH_LocateBigInternalDataObjectsDialog);
-      ShowIcon = false;
+      ShowIcon = true;
+      TopMost = true;
+      // Get an Hicon for myBitmap.
+      IntPtr Hicon = Properties.Resources.CalculatorIcon.GetHicon();
+      // Create a new icon from the handle. 
+      Icon = Icon.FromHandle(Hicon);
       ShowInTaskbar = false;
       SizeGripStyle = SizeGripStyle.Hide;
       StartPosition = FormStartPosition.Manual;
@@ -410,12 +412,12 @@ namespace SizeAnalyzer
       if (Math.Abs(client.Left - _canvas.Left) > Math.Abs(client.Right - _canvas.Right))
       {
         point = new Point(client.Left - 15, client.Top + client.Height / 2);
-        target = new PointF(rectangle.Right, (float)(0.5 * ((double)rectangle.Top + (double)rectangle.Bottom)));
+        target = new PointF(rectangle.Right + 50, (float)(0.5 * ((double)rectangle.Top + (double)rectangle.Bottom)));
       }
       else
       {
         point = new Point(client.Right + 15, client.Top + client.Height / 2);
-        target = new PointF(rectangle.X, (float)(0.5 * ((double)rectangle.Top + (double)rectangle.Bottom)));
+        target = new PointF(rectangle.X - 50, (float)(0.5 * ((double)rectangle.Top + (double)rectangle.Bottom)));
       }
       new GH_NamedView(_canvas.Viewport, point, target).SetToViewport(_canvas, 200);
     }
