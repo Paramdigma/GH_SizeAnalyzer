@@ -222,12 +222,22 @@ namespace SizeAnalyzer
             digitScroller.ValueChanged += (sender, args) => _sizeThreshold = Convert.ToDouble(args.Value);
             customItem.Checked = !options.Any(option => Math.Abs(_sizeThreshold - option) < 0.01);
             GH_DocumentObject.Menu_AppendCustomItem(customItem.DropDown, digitScroller);
-        }
 
-        /// <summary>
-        /// Draws the fixed position part of the Widget
-        /// </summary>
-        protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
+            GH_DocumentObject.Menu_AppendSeparator(menu);
+
+      GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog",(o,e) =>
+      {
+        var dialog = new GH_LocateBigInternalDataObjectsDialog();
+        dialog.Show();
+        dialog.Canvas = Instances.ActiveCanvas;
+      });
+
+    }
+
+    /// <summary>
+    /// Draws the fixed position part of the Widget
+    /// </summary>
+    protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
           Rectangle controlFrame, RectangleF canvasFrame)
         {
             if (Instances.ActiveCanvas.Document == null) return; // Skip if no document

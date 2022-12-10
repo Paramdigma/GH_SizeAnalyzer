@@ -43,6 +43,24 @@ namespace SizeAnalyzer
                   }
               });
         }
+        [Flags]
+        public enum ParamType
+        {
+          OverThreshold= 1,
+          Loading = 2,
+          UnderThreshold = 4,
+          All = 7
+        }
+        public static IEnumerable<IGH_DocumentObject> GetParams(double threshold)
+    {
+
+      return _resultsCache
+        .Where(pair => pair.Value.IsCompleted && pair.Value.Result >= threshold)
+        .Select(kv =>
+        {
+          return Instances.ActiveCanvas.Document.FindObject(kv.Key, false);
+        });
+    }
 
         public static double GetTotal()
         {
