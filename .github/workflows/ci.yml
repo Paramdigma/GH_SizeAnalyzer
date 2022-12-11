@@ -1,0 +1,26 @@
+name: "CI"
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: microsoft/setup-msbuild@v1.1
+      - uses: actions/setup-dotnet@v3
+      - name: Build app for release
+        run: dotnet build
+      # Runs a set of commands using the runners shell
+      - name: Download yak
+        run: |
+          curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
+          ./yak spec
+      - name: Build Yak
+        run: |
+          ./yak build
