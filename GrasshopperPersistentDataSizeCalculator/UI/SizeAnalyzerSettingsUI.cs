@@ -13,11 +13,25 @@ namespace SizeAnalyzer.UI
     private IContainer components;
     private TableLayoutPanel panel;
     private CheckBox _checkShow;
-    private CheckBox checkShowGlobal;
-    private CheckBox checkShowParams;
+    private CheckBox _checkShowGlobal;
+    private CheckBox _checkShowParams;
 
     private GH_DigitScroller _digitThreshold;
-    private GH_DigitScroller digitThresholdGlobal;
+    private GH_DigitScroller _digitThresholdGlobal;
+    private GH_DigitScroller digitThresholdGlobal
+    {
+      get => _digitThresholdGlobal;
+      set
+      {
+
+        if (_digitThresholdGlobal != null)
+          _digitThresholdGlobal.ValueChanged -= digitThresholdGlobal_ValueChanged;
+        _digitThresholdGlobal = value;
+        if (_digitThresholdGlobal == null)
+          return;
+        _digitThresholdGlobal.ValueChanged += digitThresholdGlobal_ValueChanged;
+      }
+    }
     private ToolTip toolTip;
     private GH_Label label;
 
@@ -35,8 +49,35 @@ namespace SizeAnalyzer.UI
           return;
         _checkShow.CheckedChanged += checkShow_ValueChanged;
       }
+    }    
+    private CheckBox checkShowGlobal
+    {
+      get => _checkShowGlobal;
+      set
+      {
+
+        if (_checkShowGlobal != null)
+          _checkShowGlobal.CheckedChanged -= checkShowGlobal_ValueChanged;
+        _checkShowGlobal = value;
+        if (_checkShowGlobal == null)
+          return;
+        _checkShowGlobal.CheckedChanged += checkShowGlobal_ValueChanged;
+      }
     }
-    
+    private CheckBox checkShowParams
+    {
+      get => _checkShowParams;
+      set
+      {
+
+        if (_checkShowParams != null)
+          _checkShowParams.CheckedChanged -= checkShowParams_ValueChanged;
+        _checkShowParams = value;
+        if (_checkShowParams == null)
+          return;
+        _checkShowParams.CheckedChanged += checkShowParams_ValueChanged;
+      }
+    }
     internal virtual GH_DigitScroller digitThreshold
     {
       get => _digitThreshold;
@@ -86,8 +127,10 @@ namespace SizeAnalyzer.UI
       checkShowGlobal = SetupCheckboxShowGlobal();
       checkShowParams = SetupCheckboxShowParams();
       digitThreshold = DrawUtils.SetupDigitScroller("digitThreshold", "Node size Threshold", "megabytes");
+      digitThreshold.Value = new decimal(Settings.ParamThreshold);
       digitThresholdGlobal =
         DrawUtils.SetupDigitScroller("digitThresholdGlobal", "Document size threshold", "megabytes");
+      digitThresholdGlobal.Value = new decimal(Settings.GlobalThreshold);
       label = DrawUtils.SetupLabel();
 
       // Setup tooltips
@@ -223,7 +266,12 @@ namespace SizeAnalyzer.UI
       Settings.ParamThreshold = Convert.ToDouble(digitThreshold.Value);
       Grasshopper.Instances.RedrawCanvas();
     }
-    
+    private void digitThresholdGlobal_ValueChanged(object sender, GH_DigitScrollerEventArgs e)
+    {
+      if (e.Intermediate) return;
+      Settings.GlobalThreshold = Convert.ToDouble(digitThresholdGlobal.Value);
+      Grasshopper.Instances.RedrawCanvas();
+    }
     private void SizeAnalyzerWidgetFrontEnd_Load(object sender, EventArgs e)
     {
       //OnVisibleChanged(Settings.ShowChanged);

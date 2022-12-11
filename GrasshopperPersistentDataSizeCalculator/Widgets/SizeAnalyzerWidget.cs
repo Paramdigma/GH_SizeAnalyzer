@@ -82,7 +82,8 @@ namespace SizeAnalyzer.Widgets
       base.Render(canvas);
 
       if (canvas.Document == null) return;
-
+      if (!Settings.ShowParamWarnings) return;
+      
       // Draw here anything that has to be drawn "per-component" (i.e. the bubbles with the size)
       DrawnIcons = new List<IGH_Param>();
       var drawableParams = GetAllParamsWithLocalData(canvas.Document);
@@ -214,7 +215,7 @@ namespace SizeAnalyzer.Widgets
           Rectangle controlFrame, RectangleF canvasFrame)
     {
       if (Instances.ActiveCanvas.Document == null) return; // Skip if no document
-
+      if(!Settings.ShowGlobalWarnings) return;
       WidgetArea = controlFrame; // Update the WidgetArea
 
       var graphics = canvas.Graphics; // Get the graphics instance
