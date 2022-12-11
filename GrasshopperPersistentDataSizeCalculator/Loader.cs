@@ -7,7 +7,7 @@ namespace SizeAnalyzer
 {
   public class Loader : GH_AssemblyPriority
     {
-        public readonly SizeAnalyzerWidget Widget = new SizeAnalyzerWidget();
+        public readonly GH_SizeAnalyzerWidget Widget = new GH_SizeAnalyzerWidget();
 
         public override GH_LoadingInstruction PriorityLoad()
         {

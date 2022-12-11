@@ -16,7 +16,7 @@ using SizeAnalyzer.UI;
 
 namespace SizeAnalyzer.Widgets
 {
-    public class SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
+    public class GH_SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
     {
         private static int radius = 5;
 
@@ -195,11 +195,11 @@ namespace SizeAnalyzer.Widgets
                 Width = 200,
                 DecimalPlaces = 0,
                 MaximumValue = 100,
-                MinimumValue = Convert.ToDecimal(0.01),
+                MinimumValue = Convert.ToDecimal(1),
                 Value = Convert.ToDecimal(Settings.GlobalThreshold)
             };
 
-            //digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
+            digitScrollerg.ValueChanged += (sender, args) => Settings.GlobalThreshold = Convert.ToDouble(args.Value);
             customItemg.Checked = !optionsGlobal.Any(option => Math.Abs(Settings.GlobalThreshold - option) < 0.01);
             GH_DocumentObject.Menu_AppendCustomItem(customItemg.DropDown, digitScrollerg);
 
@@ -221,11 +221,11 @@ namespace SizeAnalyzer.Widgets
                 Width = 200,
                 DecimalPlaces = 0,
                 MaximumValue = 100,
-                MinimumValue = Convert.ToDecimal(0.01),
+                MinimumValue = Convert.ToDecimal(1),
                 Value = Convert.ToDecimal(Settings.ParamThreshold)
             };
 
-            //digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
+            digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
             customItem.Checked = !optionsParams.Any(option => Math.Abs(Settings.ParamThreshold - option) < 0.01);
             GH_DocumentObject.Menu_AppendCustomItem(customItem.DropDown, digitScroller);
             
