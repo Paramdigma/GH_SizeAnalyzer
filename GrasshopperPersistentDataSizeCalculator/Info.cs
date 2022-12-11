@@ -13,7 +13,7 @@ namespace SizeAnalyzer
         public override Bitmap Icon => Properties.Resources.CalculatorIcon;
 
         //Return a short string describing the purpose of this GHA library.
-        public override string Description => "Grasshopper Tool to warn of big internalized data inside nodes.";
+        public override string Description => "Grasshopper Tool to warn of big internalized data in GH documents.";
 
         public override Guid Id => new Guid("95323AB1-7AD7-48FB-8583-AEEB21987B89");
 

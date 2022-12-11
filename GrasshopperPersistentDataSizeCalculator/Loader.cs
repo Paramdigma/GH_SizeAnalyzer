@@ -1,10 +1,11 @@
 ﻿using Grasshopper;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
+using SizeAnalyzer.Widgets;
 
 namespace SizeAnalyzer
 {
-    public class Loader : GH_AssemblyPriority
+  public class Loader : GH_AssemblyPriority
     {
         public readonly SizeAnalyzerWidget Widget = new SizeAnalyzerWidget();
 
