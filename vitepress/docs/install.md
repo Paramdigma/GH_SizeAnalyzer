@@ -12,7 +12,7 @@ There are two different ways to install the plugin. With Rhino 7 the packager ma
 ::: tip :bulb: TIP:
 The package manager requires a valid Rhino license and an internet connection
 :::
-(Recommended) This is the package manager content
+(Recommended) The package manager UI is avilable via the \_PackageManager command. It provides a NuGet-style interface that allows users to search for packages, install them and see if any updates are avilable to currently installed packages.
 
 ![Rhino package manager (a.k.a) yak](./imgs/package_manager.jpg)
 
@@ -25,6 +25,5 @@ This is the copy/paste installation content
 ::: tip :bulb: TIP:
 Before running Rhino, since the component is distributed from another computer, windows might block it to secure your computer. In this case the component will not be activated. In order to unblock it, `Right-click` > `Properties` on the `GH_SizeAnalyzer.gha` file itself and check the unblock box.
 :::
-![Unlock the grasshopper .gha file](./imgs/unlock_component.png){ style="display: block; margin: 0 auto" }
 
----
+![Unlock the grasshopper .gha file](./imgs/unlock_component.png){ style="display: block; margin: 0 auto" }
