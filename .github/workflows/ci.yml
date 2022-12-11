@@ -21,8 +21,8 @@ jobs:
       - name: Download yak
         run: |
           curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
-          cd ./bin/Debug
-          ../../yak spec
+          cd ./GH_SizeAnalyzer/bin/Debug
+          ../../../yak spec
       - name: Build Yak
         run: |
           ./yak build
