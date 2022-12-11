@@ -1,5 +1,5 @@
 export default {
-  //base: "/GH_SizeAnalyzer/",
+  base: "/GH_SizeAnalyzer/",
   title: "GH Size Analyzer",
   description:
     "A grasshopper component to analyze size of internal data in stored in the document.",
