@@ -17,12 +17,12 @@ hero:
       link: https://github.com/paramdigma/gh_sizeanalyzer
 features:
   - icon: ⚡️
-    title: Vite, The DX that can't be beat
-    details: Lorem ipsum...
-  - icon: 🖖
-    title: Power of Vue meets Markdown
-    details: Lorem ipsum...
+    title: Easy to use
+    details: Get alerted when you internalize too much data
+  - icon: ⚙️
+    title: Configurable
+    details: How much is "too much" is up to you to define
   - icon: 🛠️
-    title: Simple and minimal, always
-    details: Lorem ipsum...
+    title: Simple and minimal
+    details: Non-obtrusive UI alerts
 ---
