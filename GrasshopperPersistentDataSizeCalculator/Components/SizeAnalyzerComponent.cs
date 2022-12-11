@@ -10,6 +10,8 @@ namespace SizeAnalyzer.Components
 {
   public class SizeAnalyzerComponent : GH_Component
   {
+    public override GH_Exposure Exposure => GH_Exposure.hidden;
+
     /// <summary>
     /// Each implementation of GH_Component must provide a public
     /// constructor without any arguments.
@@ -38,7 +40,7 @@ namespace SizeAnalyzer.Components
     {
       pManager.AddTextParameter("Data name", "DN", "DN", GH_ParamAccess.item);
     }
-
+   
     /// <summary>
     /// This is the method that actually does the work.
     /// </summary>
@@ -57,7 +59,7 @@ namespace SizeAnalyzer.Components
       }
       DA.SetData(0, stringBuilder.ToString());
     }
-
+    
     private GH_Document _document { get; set; }
     public IEnumerable<IGH_Param> GetAllParamsInDoc()
     {

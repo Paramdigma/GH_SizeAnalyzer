@@ -130,7 +130,7 @@ namespace SizeAnalyzer.Widgets
 
         private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
         {
-            var radius = 5;
+            var radius = 4;
             var brush = Brushes.Red;
             var r = GetParamIconRectangleF(p, radius);
             var whitesmoke = new Pen(Color.WhiteSmoke)
@@ -140,8 +140,8 @@ namespace SizeAnalyzer.Widgets
             canvas.Graphics.DrawEllipse(whitesmoke, r);
             canvas.Graphics.FillEllipse(brush, r);
             whitesmoke.Width = 1;
-            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 2, r.Left + r.Width / 2, r.Bottom - 4);
-            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 3,r.Left + r.Width / 2, r.Bottom - 2);
+            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 1, r.Left + r.Width / 2, r.Bottom - 3);
+            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 2,r.Left + r.Width / 2, r.Bottom - 1);
             DrawnIcons.Add(p);
         }
 
@@ -171,6 +171,12 @@ namespace SizeAnalyzer.Widgets
         public override void AppendToMenu(ToolStripDropDownMenu menu)
         {
             base.AppendToMenu(menu);
+            
+            GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog", (o, e) =>
+            {
+                SearchDialog.Show();
+                SearchDialog.Focus();
+            });
             GH_DocumentObject.Menu_AppendSeparator(menu);
 
             var itemA = GH_DocumentObject.Menu_AppendItem(menu, "Document Threshold");
@@ -187,6 +193,7 @@ namespace SizeAnalyzer.Widgets
             {
                 Height = 40,
                 Width = 200,
+                DecimalPlaces = 0,
                 MaximumValue = 100,
                 MinimumValue = Convert.ToDecimal(0.01),
                 Value = Convert.ToDecimal(Settings.GlobalThreshold)
@@ -201,7 +208,7 @@ namespace SizeAnalyzer.Widgets
             var itemB = GH_DocumentObject.Menu_AppendItem(menu, "Params Threshold");
             itemB.Enabled = false;
             // Create fixed megabyte options
-            var optionsParams = new List<double> { 0.5, 1, 2, 5, 10 };
+            var optionsParams = new List<double> { 1, 2, 5, 10 };
             foreach (var option in optionsParams)
                 GH_DocumentObject.Menu_AppendItem(menu, $"{option}mb", (e, a) => Settings.ParamThreshold = option, null,
                     true, Math.Abs(Settings.ParamThreshold - option) < 0.01);
@@ -212,6 +219,7 @@ namespace SizeAnalyzer.Widgets
             {
                 Height = 40,
                 Width = 200,
+                DecimalPlaces = 0,
                 MaximumValue = 100,
                 MinimumValue = Convert.ToDecimal(0.01),
                 Value = Convert.ToDecimal(Settings.ParamThreshold)
@@ -220,14 +228,7 @@ namespace SizeAnalyzer.Widgets
             //digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
             customItem.Checked = !optionsParams.Any(option => Math.Abs(Settings.ParamThreshold - option) < 0.01);
             GH_DocumentObject.Menu_AppendCustomItem(customItem.DropDown, digitScroller);
-
-            GH_DocumentObject.Menu_AppendSeparator(menu);
-
-            GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog", (o, e) =>
-            {
-                SearchDialog.Show();
-                SearchDialog.Focus();
-            });
+            
         }
 
         private static SizeAnalyzerSearchDialog _searchDialog;
@@ -240,6 +241,9 @@ namespace SizeAnalyzer.Widgets
         {
             if (Instances.ActiveCanvas.Document == null) return; // Skip if no document
             if (!Settings.ShowGlobalWarnings) return;
+            var total = Calculator.GetTotal();
+            if(total< Settings.GlobalThreshold) return;
+            
             WidgetArea = controlFrame; // Update the WidgetArea
 
             var graphics = canvas.Graphics; // Get the graphics instance
@@ -251,26 +255,23 @@ namespace SizeAnalyzer.Widgets
 
             // To get it to draw fixed on the screen we must reset the canvas transform, and store it for later.
             var transform = canvas.Graphics.Transform;
+            var textCapsule = GH_Capsule.CreateTextCapsule(
+                controlFrame, 
+                controlFrame, 
+                GH_Palette.Warning, "Total size:\n"+Math.Round(total, 1) + "mb",new Font(FontFamily.GenericSansSerif, 15));
             graphics.ResetTransform();
 
             // Draw the background rectangle
-            graphics.DrawRectangle(blackPen, controlFrame);
-            graphics.FillRectangle(solidBrush, controlFrame);
+            //graphics.DrawRectangle(blackPen, controlFrame);
+            //graphics.FillRectangle(solidBrush, controlFrame);
 
             // Get x,y coords for text
             var x = controlAnchor.X - controlFrame.Width / 2;
             var y = controlAnchor.Y - controlFrame.Height / 2;
-
-            // Draw the text
-            graphics.DrawString("Total internal size", new Font(FontFamily.GenericSansSerif, 10), blackBrush, x,
-                y += Global_Proc.UiAdjust(5));
-            graphics.DrawString(Math.Round(Calculator.GetTotal(), 3) + "mb", new Font(FontFamily.GenericSansSerif, 20),
-                blackBrush, x,
-                y + Global_Proc.UiAdjust(15));
+            textCapsule.Render(graphics, Color.Red);
 
             // Once done, we reset the transform of the canvas.
             graphics.Transform = transform;
-
             // Dispose all of our pens when done
             blackPen.Dispose();
             solidBrush.Dispose();
@@ -314,14 +315,19 @@ namespace SizeAnalyzer.Widgets
         {
             var param = DrawnIcons.FirstOrDefault(p => GetParamIconRectangleF(p, radius).Contains(canvasPoint));
             base.SetupTooltip(canvasPoint, e);
-            if (param == null) return;
+            
+            if (param == null)
+            {
+                e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";
+                return;
+            }
 
             var task = Calculator.Get(param);
             if (!task.IsCompleted) return;
 
             e.Title = "Warning: Internal data is too big";
             e.Text = $"This parameter's data is TOO BIG.";
-            e.Description = $"Data size = {Math.Round(task.Result, 3)}mb\nThreshold = {Settings.ParamThreshold}mb";
+            e.Description = $"Data size = {Math.Round(task.Result, 2)}mb\nThreshold = {Settings.ParamThreshold}mb";
         }
     }
 }

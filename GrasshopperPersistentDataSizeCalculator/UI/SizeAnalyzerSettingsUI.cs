@@ -152,7 +152,7 @@ namespace SizeAnalyzer.UI
       AutoScaleMode = AutoScaleMode.Font;
       Margin = new Padding(24, 23, 24, 23);
       Name = nameof(Settings);
-      Size = new Size(450, 128);
+      Size = new Size(450, 138);
 
       // Resume layout
       panel.ResumeLayout(false);
@@ -170,9 +170,9 @@ namespace SizeAnalyzer.UI
       panel.Name = "Panel";
       panel.RowCount = 5;
       panel.RowStyles.Add(new RowStyle());
-      panel.AutoSize = true;
-      panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
       panel.TabIndex = 2;
+      panel.Size = new Size(450, 125);
+
     }
 
     private void SetupToolTip(Control control, string text)

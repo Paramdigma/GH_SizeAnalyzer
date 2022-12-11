@@ -35,7 +35,7 @@ namespace SizeAnalyzer
 
     static double _paramThreshold
     {
-      get => Instances.Settings.GetValue(_paramThresholdKey, 0.5);
+      get => Instances.Settings.GetValue(_paramThresholdKey, 1);
       set => Instances.Settings.SetValue(_paramThresholdKey, value);
     }
 
