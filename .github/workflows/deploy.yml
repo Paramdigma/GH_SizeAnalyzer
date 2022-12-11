@@ -17,13 +17,16 @@ jobs:
         with:
           node-version: 16
           cache: npm
+          cache-dependency-path: vitepress/package-lock.json
       - run: npm ci
+        working-directory: vitepress
 
       - name: Build
         run: npm run docs:build
+        working-directory: vitepress
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/.vitepress/dist
+          publish_dir: vitepress/docs/.vitepress/dist
