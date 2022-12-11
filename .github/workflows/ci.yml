@@ -25,4 +25,5 @@ jobs:
           ../../../yak spec
       - name: Build Yak
         run: |
-          ./yak build
+          cd ./GH_SizeAnalyzer/bin/Debug
+          ../../../yak build
