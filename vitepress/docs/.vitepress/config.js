@@ -8,12 +8,12 @@ export default {
       {
         text: "Getting started",
         items: [
-          { text: "Install", link: "install.md" },
-          { text: "Usage", link: "usage.md" },
-          { text: "Settings", link: "settings.md" },
-          { text: "Examples", link: "examples.md" }
+          { text: "Install", link: "/install.md" },
+          { text: "Usage", link: "/usage.md" },
+          { text: "Settings", link: "/settings.md" }
         ]
-      }
+      },
+      { text: "Examples", items: [{ text: "Basic", link: "/examples.md" }] }
     ]
   }
 }

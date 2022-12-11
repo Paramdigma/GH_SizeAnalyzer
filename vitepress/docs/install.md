@@ -1,5 +1,1 @@
----
-next: "Usage"
----
-
 # Installing
