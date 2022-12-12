@@ -15,30 +15,24 @@ jobs:
       - uses: actions/checkout@v3.2.0
       - uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
-      - name: Download yak
+      - name: ⬇️ Download YAK
         run: |
           curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
-      - name: Build GH Plugin
+      - name: 🦗 Build GH Plugin
         run: |
           dotnet build -c Release /p:Version=$env:TAG
       # Runs a set of commands using the runners shell
-      - name: Create plugin manifest
+      - name: ✨Create plugin manifest
         run: |
-          cd ./GH_SizeAnalyzer/bin/Release
           ../../../yak spec
-      - name: Build Yak package
-        run: |
-          cd ./GH_SizeAnalyzer/bin/Release
-          ../../../yak build
-      - name: Archive yak file
-        uses: actions/upload-artifact@v3
-        with:
-          name: GH_SizeAnalyzer-${{ env.TAG }}.yak
-          path: "./GH_SizeAnalyzer/bin/Release/*.yak"
-          retention-days: 2
-      - name: Deploy to Rhino package manager
+          Add-Content manifest.yml "icon: Resources/SizeAnalyzerIcon.png"
+        working-directory: GH_SizeAnalyzer/bin/Release
+      - name: 🚧 Build YAK package
+        run: ../../../yak build
+        working-directory: GH_SizeAnalyzer/bin/Release
+      - name: 🚀 Deploy to Rhino package manager
         if: ${{ github.ref_type == 'tag' }}
         run: |
-          cd ./GH_SizeAnalyzer/bin/Release
           $env:YAK_FILE = (Get-ChildItem "./" *.yak -Recurse).fullname
           ../../../yak push $env:YAK_FILE
+        working-directory: GH_SizeAnalyzer/bin/Release
