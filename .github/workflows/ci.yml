@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-dotnet@v3
       - name: Build app for release
         run: |
-          $env:TAG = if([string]::IsNullOrEmpty($env:TAG_NAME)) { "0.0.999.$($env:WORKFLOW_NUM)" } else { $env:TAG_NAME }
+          $env:TAG = if([string]::IsNullOrEmpty($env:TAG_NAME)) { "0.0.999.$($env:BUILD_NUM)" } else { $env:TAG_NAME }
           dotnet build -c Release /p:Version=$env:TAG
       # Runs a set of commands using the runners shell
       - name: Download yak
