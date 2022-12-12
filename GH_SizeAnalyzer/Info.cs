@@ -23,9 +23,9 @@ namespace SizeAnalyzer
         //Return a string representing your preferred contact details.
         public override string AuthorContact => "https://github.com/Paramdigma";
 
-        public override string Version => base.Version;
+        public override string Version => System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString();
 
-        public override string AssemblyVersion => base.AssemblyVersion;
+        public override string AssemblyVersion => System.Reflection.Assembly.GetEntryAssembly().GetName().Version.ToString();
 
         public override Bitmap AssemblyIcon => Properties.Resources.CalculatorIcon;
     }
