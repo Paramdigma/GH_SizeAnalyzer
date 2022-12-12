@@ -14,7 +14,7 @@ jobs:
       BUILD_NUM: ${{ github.run_number }}
       TAG_NAME: ${{ github.event.release.tag_name }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.2.0
       - uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
       - name: Build app for release
@@ -34,5 +34,5 @@ jobs:
       - name: Archive yak file
         uses: actions/upload-artifact@v3
         with:
-          name: yak-file
           path: "./GH_SizeAnalyzer/bin/Release/*.yak"
+          retention-days: 2
