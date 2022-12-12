@@ -18,7 +18,7 @@ namespace SizeAnalyzer.Widgets
 {
     public class GH_SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
     {
-        private static int radius = 5;
+        private readonly static int radius = 4;
 
         public override bool Visible
         {
@@ -66,8 +66,7 @@ namespace SizeAnalyzer.Widgets
         {
             get
             {
-                if (_searchDialog == null)
-                    _searchDialog = new SizeAnalyzerSearchDialog();
+                _searchDialog ??= new SizeAnalyzerSearchDialog();
                 _searchDialog.Canvas = Instances.ActiveCanvas;
                 _searchDialog.FormClosed += (s, e) => _searchDialog = null;
                 return _searchDialog;
@@ -108,7 +107,6 @@ namespace SizeAnalyzer.Widgets
 
         private void DrawLoadingIcon(GH_Canvas canvas, IGH_Param p)
         {
-            var radius = 5;
             var brush = Brushes.Blue;
             var bounds = p.Attributes.Bounds;
             var center = new PointF(bounds.Right - radius, bounds.Top - radius);
@@ -120,8 +118,10 @@ namespace SizeAnalyzer.Widgets
             }
 
             var r = new RectangleF(center, new SizeF(radius * 2, radius * 2));
-            var whitesmoke = new Pen(Color.WhiteSmoke);
-            whitesmoke.Width = 2;
+            var whitesmoke = new Pen(Color.WhiteSmoke)
+            {
+                Width = 2
+            };
             canvas.Graphics.DrawEllipse(whitesmoke, r);
             canvas.Graphics.FillEllipse(brush, r);
 
@@ -130,7 +130,6 @@ namespace SizeAnalyzer.Widgets
 
         private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
         {
-            var radius = 4;
             var brush = Brushes.Red;
             var r = GetParamIconRectangleF(p, radius);
             var whitesmoke = new Pen(Color.WhiteSmoke)
@@ -141,7 +140,7 @@ namespace SizeAnalyzer.Widgets
             canvas.Graphics.FillEllipse(brush, r);
             whitesmoke.Width = 1;
             canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 1, r.Left + r.Width / 2, r.Bottom - 3);
-            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 2,r.Left + r.Width / 2, r.Bottom - 1);
+            canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 2, r.Left + r.Width / 2, r.Bottom - 1);
             DrawnIcons.Add(p);
         }
 
@@ -171,7 +170,7 @@ namespace SizeAnalyzer.Widgets
         public override void AppendToMenu(ToolStripDropDownMenu menu)
         {
             base.AppendToMenu(menu);
-            
+
             GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog", (o, e) =>
             {
                 SearchDialog.Show();
@@ -228,7 +227,7 @@ namespace SizeAnalyzer.Widgets
             digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
             customItem.Checked = !optionsParams.Any(option => Math.Abs(Settings.ParamThreshold - option) < 0.01);
             GH_DocumentObject.Menu_AppendCustomItem(customItem.DropDown, digitScroller);
-            
+
         }
 
         private static SizeAnalyzerSearchDialog _searchDialog;
@@ -242,32 +241,24 @@ namespace SizeAnalyzer.Widgets
             if (Instances.ActiveCanvas.Document == null) return; // Skip if no document
             if (!Settings.ShowGlobalWarnings) return;
             var total = Calculator.GetTotal();
-            if(total< Settings.GlobalThreshold) return;
-            
+            if (total < Settings.GlobalThreshold) return;
+
             WidgetArea = controlFrame; // Update the WidgetArea
 
             var graphics = canvas.Graphics; // Get the graphics instance
 
             // Setup brushes and pens
             var solidBrush = new SolidBrush(Color.Red);
-            var blackBrush = new SolidBrush(Color.Black);
             var blackPen = new Pen(Color.Black);
 
             // To get it to draw fixed on the screen we must reset the canvas transform, and store it for later.
             var transform = canvas.Graphics.Transform;
             var textCapsule = GH_Capsule.CreateTextCapsule(
-                controlFrame, 
-                controlFrame, 
-                GH_Palette.Warning, "Total size:\n"+Math.Round(total, 1) + "mb",new Font(FontFamily.GenericSansSerif, 15));
+                controlFrame,
+                controlFrame,
+                GH_Palette.Warning, "Total size:\n" + Math.Round(total, 1) + "mb", new Font(FontFamily.GenericSansSerif, 15));
             graphics.ResetTransform();
 
-            // Draw the background rectangle
-            //graphics.DrawRectangle(blackPen, controlFrame);
-            //graphics.FillRectangle(solidBrush, controlFrame);
-
-            // Get x,y coords for text
-            var x = controlAnchor.X - controlFrame.Width / 2;
-            var y = controlAnchor.Y - controlFrame.Height / 2;
             textCapsule.Render(graphics, Color.Red);
 
             // Once done, we reset the transform of the canvas.
@@ -300,13 +291,13 @@ namespace SizeAnalyzer.Widgets
                             yield return param;
                         break;
                     case IGH_Component component:
-                    {
-                        var localDataParams =
-                            component.Params.Input.Where(cParam => cParam.DataType == GH_ParamData.local);
-                        foreach (var cParam in localDataParams)
-                            yield return cParam;
-                        break;
-                    }
+                        {
+                            var localDataParams =
+                                component.Params.Input.Where(cParam => cParam.DataType == GH_ParamData.local);
+                            foreach (var cParam in localDataParams)
+                                yield return cParam;
+                            break;
+                        }
                 }
             }
         }
@@ -315,7 +306,7 @@ namespace SizeAnalyzer.Widgets
         {
             var param = DrawnIcons.FirstOrDefault(p => GetParamIconRectangleF(p, radius).Contains(canvasPoint));
             base.SetupTooltip(canvasPoint, e);
-            
+
             if (param == null)
             {
                 e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";

@@ -23,6 +23,5 @@ namespace SizeAnalyzer
 
         public override Bitmap AssemblyIcon => Properties.Resources.CalculatorIcon;
 
-
     }
 }

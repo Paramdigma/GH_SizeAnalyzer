@@ -5,7 +5,7 @@ using SizeAnalyzer.Widgets;
 
 namespace SizeAnalyzer
 {
-  public class Loader : GH_AssemblyPriority
+    public class Loader : GH_AssemblyPriority
     {
         public readonly GH_SizeAnalyzerWidget Widget = new GH_SizeAnalyzerWidget();
 
