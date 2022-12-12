@@ -8,6 +8,8 @@
 
 **/.vs
 **/.idea
+**/node_modules
+
 GrasshopperPersistentDataSizeCalculator.sln.DotSettings.user
 
 .DS_Store
