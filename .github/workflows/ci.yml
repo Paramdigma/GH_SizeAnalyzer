@@ -34,5 +34,6 @@ jobs:
       - name: Archive yak file
         uses: actions/upload-artifact@v3
         with:
+          name: GH_SizeAnalyzer-${{ env.TAG }}.yak
           path: "./GH_SizeAnalyzer/bin/Release/*.yak"
           retention-days: 2
