@@ -11,22 +11,28 @@ jobs:
     runs-on: windows-latest
     env:
       YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
-      BUILD_NUM: ${{ github.run_id }}
+      BUILD_NUM: ${{ github.run_number }}
+      TAG_NAME: ${{ github.event.release.tag_name }}
     steps:
       - uses: actions/checkout@v2
       - uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
       - name: Build app for release
         run: |
-          $tag = "2.0.0"
-          dotnet build /p:AssemblyVersionNumber=$env:tag /p:AssemblyInformationalVersion=$env:tag /p:Version=$env:tag
+          $env:TAG = if([string]::IsNullOrEmpty($env:TAG_NAME)) { "0.0.999.$($env:WORKFLOW_NUM)" } else { $env:TAG_NAME }
+          dotnet build -c Release /p:Version=$env:TAG
       # Runs a set of commands using the runners shell
       - name: Download yak
         run: |
           curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
-          cd ./GH_SizeAnalyzer/bin/Debug
+          cd ./GH_SizeAnalyzer/bin/Release
           ../../../yak spec
       - name: Build Yak
         run: |
-          cd ./GH_SizeAnalyzer/bin/Debug
+          cd ./GH_SizeAnalyzer/bin/Release
           ../../../yak build
+      - name: Archive yak file
+        uses: actions/upload-artifact@v3
+        with:
+          name: yak-file
+          path: "./GH_SizeAnalyzer/bin/Release/*.yak"
