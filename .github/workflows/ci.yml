@@ -37,3 +37,8 @@ jobs:
           name: GH_SizeAnalyzer-${{ env.TAG }}.yak
           path: "./GH_SizeAnalyzer/bin/Release/*.yak"
           retention-days: 2
+      - name: Deploy to Rhino package manager
+        run: |
+          cd ./GH_SizeAnalyzer/bin/Release
+          $env:YAK_FILE = (Get-ChildItem "./" *.yak -Recurse).fullname
+          ../../../yak push $env:YAK_FILE
