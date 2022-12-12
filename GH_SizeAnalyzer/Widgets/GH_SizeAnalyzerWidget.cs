@@ -26,11 +26,11 @@ namespace SizeAnalyzer.Widgets
             set => Settings.Show = value;
         }
 
-        public override string Name => "Internal Data Size Analyzer";
+        public override string Name => "Size Analyzer";
 
-        public override string Description => "Shows the size of internal data";
+        public override string Description => "Alerts of the size of internal data when it exceeds a given threshold.";
 
-        public override string TooltipText => "Shows the size of any internalized data";
+        public override string TooltipText => "Alerts of the size of any internalized data when it exceeds a given threshold.";
 
         public override Bitmap Icon_24x24 => Properties.Resources.CalculatorIcon;
 

@@ -17,7 +17,7 @@ namespace SizeAnalyzer
 
         public override string AuthorName => "Paramdigma";
 
-        public override string AuthorContact => "https://github.com/Paramdigma";
+        public override string AuthorContact => "https://github.com/Paramdigma/GH_SizeAnalyzer";
 
         public override string Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
