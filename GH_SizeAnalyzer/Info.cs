@@ -22,5 +22,7 @@ namespace SizeAnalyzer
 
         //Return a string representing your preferred contact details.
         public override string AuthorContact => "https://github.com/Paramdigma";
+
+        public override string Version => "1.0.0";
     }
 }
