@@ -46,21 +46,21 @@ namespace SizeAnalyzer
         [Flags]
         public enum ParamType
         {
-          OverThreshold= 1,
-          Loading = 2,
-          UnderThreshold = 4,
-          All = 7
+            OverThreshold = 1,
+            Loading = 2,
+            UnderThreshold = 4,
+            All = 7
         }
         public static IEnumerable<IGH_DocumentObject> GetParams(double threshold)
-    {
-
-      return _resultsCache
-        .Where(pair => pair.Value.IsCompleted && pair.Value.Result >= threshold)
-        .Select(kv =>
         {
-          return Instances.ActiveCanvas.Document.FindObject(kv.Key, false);
-        });
-    }
+
+            return _resultsCache
+              .Where(pair => pair.Value.IsCompleted && pair.Value.Result >= threshold)
+              .Select(kv =>
+              {
+                  return Instances.ActiveCanvas.Document.FindObject(kv.Key, false);
+              });
+        }
 
         public static double GetTotal()
         {
@@ -115,7 +115,7 @@ namespace SizeAnalyzer
           SerializationType serializationType = SerializationType.Binary)
         {
             var task = Task.Run(() => GetParamDataSize(param, serializationType), CancelTokenSource.Token);
-            task.ContinueWith(_ => RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas));
+            await task.ContinueWith(_ => RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas));
             return await task;
         }
 
