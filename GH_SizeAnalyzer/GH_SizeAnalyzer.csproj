@@ -2,7 +2,6 @@
 	
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
-    <Version>1.0</Version>
     <Title>SizeAnalyzer</Title>
     <Description>Description of Grasshopper Size Analyzer</Description>
     <TargetExt>.gha</TargetExt>
@@ -15,8 +14,7 @@
   
   <ItemGroup>
     <PackageReference Include="Grasshopper" Version="7.13.21348.13001" IncludeAssets="compile;build" />
-    <PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
-    <PackageReference Include="System.Runtime.Extensions" Version="4.3.1" IncludeAssets="compile;build" />
+    <PackageReference Include="System.Resources.Extensions" Version="7.0.0"  IncludeAssets="compile;build"/>
   </ItemGroup>
   
   <ItemGroup>
@@ -39,7 +37,7 @@
     </EmbeddedResource>
   </ItemGroup>
   
-  <PropertyGroup Condition="$(Configuration) == 'Debug' AND $([MSBuild]::IsOSPlatform(Windows))">
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform(Windows))">
     <StartProgram>C:\Program Files\Rhino 7\System\Rhino.exe</StartProgram>
     <StartArguments></StartArguments>
     <StartAction>Program</StartAction>
