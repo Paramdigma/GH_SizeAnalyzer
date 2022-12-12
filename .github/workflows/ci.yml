@@ -11,12 +11,15 @@ jobs:
     runs-on: windows-latest
     env:
       YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
+      BUILD_NUM: ${{ github.run_id }}
     steps:
       - uses: actions/checkout@v2
       - uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
       - name: Build app for release
-        run: dotnet build
+        run: |
+          $tag = "1.0.${$env:BUILD_NUM}"
+          dotnet build /p:AssemblyVersionNumber=$env:tag /p:AssemblyInformationalVersion=$env:tag /p:Version=$env:tag
       # Runs a set of commands using the runners shell
       - name: Download yak
         run: |
