@@ -7,7 +7,7 @@ namespace SizeAnalyzer
 {
     public class Info : GH_AssemblyInfo
     {
-        public override string Name => "Size Analyzer";
+        public override string Name => "GH_SizeAnalyzer";
 
         //Return a 24x24 pixel bitmap to represent this GHA library.
         public override Bitmap Icon => Properties.Resources.CalculatorIcon;
@@ -23,6 +23,10 @@ namespace SizeAnalyzer
         //Return a string representing your preferred contact details.
         public override string AuthorContact => "https://github.com/Paramdigma";
 
-        public override string Version => "1.0.0";
+        public override string Version => base.Version;
+
+        public override string AssemblyVersion => base.AssemblyVersion;
+
+        public override Bitmap AssemblyIcon => Properties.Resources.CalculatorIcon;
     }
 }
