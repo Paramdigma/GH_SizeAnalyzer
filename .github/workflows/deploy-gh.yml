@@ -15,24 +15,28 @@ jobs:
       - uses: actions/checkout@v3.2.0
       - uses: microsoft/setup-msbuild@v1.1
       - uses: actions/setup-dotnet@v3
-      - name: ⬇️ Download YAK
+
+      - name: ⬇️ Setup YAK
         run: |
           curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
+          Split-Path (Get-ChildItem "./" yak.exe -Recurse).fullname | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: 🦗 Build GH Plugin
         run: |
           dotnet build -c Release /p:Version=$env:TAG
-      # Runs a set of commands using the runners shell
+
       - name: ✨Create plugin manifest
         run: |
-          ../../../yak spec
+          yak spec
           Add-Content manifest.yml "icon: Resources/SizeAnalyzerIcon.png"
         working-directory: GH_SizeAnalyzer/bin/Release
+
       - name: 🚧 Build YAK package
-        run: ../../../yak build
+        run: yak build
         working-directory: GH_SizeAnalyzer/bin/Release
+
       - name: 🚀 Deploy to Rhino package manager
-        if: ${{ github.ref_type == 'tag' }}
         run: |
           $env:YAK_FILE = (Get-ChildItem "./" *.yak -Recurse).fullname
-          ../../../yak push $env:YAK_FILE
+          yak push $env:YAK_FILE
         working-directory: GH_SizeAnalyzer/bin/Release
