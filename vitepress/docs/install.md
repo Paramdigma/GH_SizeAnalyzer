@@ -15,11 +15,11 @@ The package manager requires a valid Rhino license and an internet connection
 
 1. To access the package manager go to the Rhino command line and type PackageManager.
 
-![Rhino package manager (a.k.a) yak](./imgs/package_manager.png)
+![Rhino package manager (a.k.a) yak](./imgs/package-manager-open.png)
 
 2. You can place **gbs** into the search bar to search for `GH_SizeAnalyzer` plug-in. A tick next to the item in the search result will notify you which version you have installed and if there is a more recent version that can be downloaded.
    TODO: insert a screenshot with the search of our plugin
-   ![Search for GH_SizeAnalyzer in the package manager](https://api.lorem.space/image/furniture?w=450&h=300)
+   ![Search for GH_SizeAnalyzer in the package manager](./imgs/package-manager.png)
 
 3. Click Install to install the selected version of the plug-in.
 
@@ -39,4 +39,4 @@ Before running Rhino, since the component is distributed from another computer a
 
 ### Uninstalling
 
-This is the uninstallation content
+Uninstalling is either done via the Package Manager, or by deleting the `GH_SizeAnalyzer.gha` file that was copied to `C:\Users\user\AppData\Roaming\Grasshopper\Libraries`

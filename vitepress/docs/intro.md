@@ -2,7 +2,7 @@
 
 `GH_SizeAnalyzer` aims to provide a quick way to find the Grasshopper nodes that have **too much data** internalized.
 
-![Parameter warning](./imgs/view-simple.png.png)
+![Parameter warning](./imgs/view-simple.png)
 
 ## What problem does it try to solve?
 
@@ -18,7 +18,10 @@ As a Grasshopper document grows, the internalized data can start **slowing down*
 The problem becomes even more frustrating because by the time you realize this, you may have dozens of nodes that need manual checking to identify which ones have to be slimmed down.
 
 ::: tip :bulb:
-This is not a flaw on McNeel's side, it was just never designed to store a lot of data within the Grasshopper document.:::
+
+This is not a flaw on McNeel's side, it was just never designed to store a lot of data within the Grasshopper document.
+
+:::
 
 ## Previous solutions
 
@@ -37,7 +40,9 @@ You can prevent the auto-save from slowing down if instead the data is stored in
 Once the data is no longer stored in Grasshopper, you can reference back either by using `referenced objects`, a `grasshpper pipeline` or even `data input/output` nodes.
 
 ::: tip :bulb: TIP:
+
 This would be our recommended approach, and the reason this widget exists 🙂
+
 :::
 
 ## How does `GH_SizeAnalyzer` help?
