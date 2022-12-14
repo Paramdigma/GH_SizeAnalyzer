@@ -2,6 +2,8 @@
 
 `GH_SizeAnalyzer` aims to provide a quick way to find the Grasshopper nodes that have **too much data** internalized.
 
+![Parameter warning](./imgs/view-simple.png.png)
+
 ## What problem does it try to solve?
 
 There are 2 Grasshopper features that tend to clash with each other when used incorrectly.
@@ -15,7 +17,8 @@ As a Grasshopper document grows, the internalized data can start **slowing down*
 
 The problem becomes even more frustrating because by the time you realize this, you may have dozens of nodes that need manual checking to identify which ones have to be slimmed down.
 
-> This is not a flaw on McNeel's side, it was just never designed to store a lot of data within the Grasshopper document.
+::: tip :bulb:
+This is not a flaw on McNeel's side, it was just never designed to store a lot of data within the Grasshopper document.:::
 
 ## Previous solutions
 
@@ -33,26 +36,34 @@ You can prevent the auto-save from slowing down if instead the data is stored in
 
 Once the data is no longer stored in Grasshopper, you can reference back either by using `referenced objects`, a `grasshpper pipeline` or even `data input/output` nodes.
 
-> This would be our recommended approach, and the reason this widget exists 🙂
+::: tip :bulb: TIP:
+This would be our recommended approach, and the reason this widget exists 🙂
+:::
 
 ## How does `GH_SizeAnalyzer` help?
 
 `GH_SizeAnalyzer` is a Grasshopper plugin that provides a new **widget** under the `Widgets` section.
 
-![Widget's section](https://)
+![Widget's section](./imgs/display-widgets-menu.png)
 
 ### Features
 
-The widget will draw 2 new interfaces in the Grasshopper canvas
+The widget will draw 2 new warnings in the Grasshopper canvas:
 
-#### Total size panel
+#### Document size warning
 
 A red capsule that is drawn on the bottom-left corner of the Grasshopper canvas whenever the total size of internal data in a given document exceeds a specific user-defined threshold.
+
+![Document warning](./imgs/document-warning.png)
 
 #### Parameter size warning
 
 A small red badge that is drawn on the top-right corner of any given parameter (or component input) whose internal data size exceeds a specific user-defined threshold.
 
+![Parameter warning](./imgs/parameter-warning.png)
+
 #### Parameter search
 
 Similar to Grasshopper's `F3` Search panel. This search panel allows the user to focus on the parameters that have the largest size quickly, and to further highlight any parameters that exceed the size threshold so they can be easily found.
+
+![Search panel](./imgs/search-panel.gif)
