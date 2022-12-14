@@ -8,16 +8,15 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    env:
-      YAK_TOKEN: ${{ secrets.YAK_TOKEN }}
-      TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v3.2.0
-      - uses: paramdigma/setup-yak@main
+      - uses: paramdigma/setup-yak@1.0.0
+        with:
+          token: ${{ secrets.YAK_TOKEN }}
 
       - name: 🦗 Build GH Plugin
         run: |
-          dotnet build -c Release /p:Version=$env:TAG
+          dotnet build -c Release /p:Version=${{ github.ref_name }}
 
       - name: ✨Create plugin manifest
         run: |

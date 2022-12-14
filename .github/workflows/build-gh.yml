@@ -15,7 +15,7 @@ jobs:
       TAG: ${{ format('{0}.{1}', '0.0.999', github.run_number) }}
     steps:
       - uses: actions/checkout@v3.2.0
-      - uses: paramdigma/setup-yak@main
+      - uses: paramdigma/setup-yak@1.0.0
 
       - name: 🦗 Build GH Plugin
         run: dotnet build -c Release /p:Version=$env:TAG
