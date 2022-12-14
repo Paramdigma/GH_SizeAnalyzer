@@ -15,17 +15,10 @@ jobs:
       TAG: ${{ format('{0}.{1}', '0.0.999', github.run_number) }}
     steps:
       - uses: actions/checkout@v3.2.0
-      - uses: microsoft/setup-msbuild@v1.1
-      - uses: actions/setup-dotnet@v3
-
-      - name: ⬇️ Setup YAK
-        run: |
-          curl https://files.mcneel.com/yak/tools/latest/yak.exe -o yak.exe
-          Split-Path (Get-ChildItem "./" yak.exe -Recurse).fullname | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - uses: paramdigma/setup-yak@main
 
       - name: 🦗 Build GH Plugin
-        run: |
-          dotnet build -c Release /p:Version=$env:TAG
+        run: dotnet build -c Release /p:Version=$env:TAG
 
       - name: ✨Create plugin manifest
         run: |
