@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /install.md
+      link: /intro.md
     - theme: alt
       text: View on GitHub
       link: https://github.com/paramdigma/gh_sizeanalyzer
