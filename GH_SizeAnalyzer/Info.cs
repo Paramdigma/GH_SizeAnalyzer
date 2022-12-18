@@ -23,5 +23,7 @@ namespace SizeAnalyzer
     public override string Version => Assembly.GetExecutingAssembly().GetName().Version.ToString();
 
     public override Bitmap AssemblyIcon => Resources.CalculatorIcon;
+
+    public override GH_LibraryLicense License => GH_LibraryLicense.opensource;
   }
 }

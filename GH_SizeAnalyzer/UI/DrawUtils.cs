@@ -1,12 +1,16 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Linq;
 using System.Windows.Forms;
 using Grasshopper;
 using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
+using Grasshopper.Kernel.Special;
 using SizeAnalyzer.Properties;
+using GH_DigitScroller = Grasshopper.GUI.GH_DigitScroller;
 
 namespace SizeAnalyzer.UI
 {
@@ -61,6 +65,37 @@ namespace SizeAnalyzer.UI
 
       var r = new RectangleF(center, new SizeF(radius * 2, radius * 2));
       return r;
+    }
+
+    public static IEnumerable<IGH_Param> GetAllParamsWithLocalData(GH_Document doc)
+    {
+      foreach (var obj in doc.Objects)
+        switch (obj)
+        {
+          case IGH_Param param:
+            var paramType = param.GetType();
+
+            // In general, skip any type from the `Special` namespace
+            var specialNamespace = typeof(GH_NumberSlider).Namespace;
+            var shouldSkipNamespace = paramType.Namespace == specialNamespace;
+
+            // With some exceptions
+            var isException = new List<Type> { typeof(GH_Panel) }.Contains(paramType);
+
+            var shouldSkip = shouldSkipNamespace && !isException;
+
+            if (!shouldSkip && param.DataType == GH_ParamData.local)
+              yield return param;
+            break;
+          case IGH_Component component:
+          {
+            var localDataParams =
+              component.Params.Input.Where(cParam => cParam.DataType == GH_ParamData.local);
+            foreach (var cParam in localDataParams)
+              yield return cParam;
+            break;
+          }
+        }
     }
 
     public static void DrawParamIcon_ZoomedOut(GH_Canvas canvas, IGH_Param p)
@@ -156,8 +191,8 @@ namespace SizeAnalyzer.UI
         Digits = 3,
         Dock = DockStyle.Fill,
         Margin = new Padding(24, 0, 0, 0),
-        MaximumValue = new decimal(100.00),
-        MinimumValue = new decimal(1.00),
+        MaximumValue = 100,
+        MinimumValue = 1,
         Name = name,
         Prefix = prefix,
         Radix = -1,
@@ -169,6 +204,18 @@ namespace SizeAnalyzer.UI
         Value = new decimal(new int[4])
       };
       return scroller;
+    }
+
+    public static GH_DigitScroller SetupMenuDigitScroller()
+    {
+      return new GH_DigitScroller
+      {
+        Height = 40,
+        Width = 200,
+        DecimalPlaces = 0,
+        MaximumValue = 100,
+        MinimumValue = 1
+      };
     }
   }
 }

@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using GH_IO.Serialization;
 using Grasshopper;
-using Grasshopper.GUI.Canvas;
 using Grasshopper.Kernel;
 using Rhino;
 
@@ -14,21 +13,69 @@ namespace SizeAnalyzer
 {
   public class Calculator
   {
-    [Flags]
-    public enum ParamType
-    {
-      OverThreshold = 1,
-      Loading = 2,
-      UnderThreshold = 4,
-      All = 7
-    }
-
     private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
 
     public CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
 
     public SerializationType SerializationType = SerializationType.Xml;
 
+    private void AddParameter(IGH_Param param)
+    {
+      if (param == null)
+        return;
+      if (_resultsCache.ContainsKey(param.InstanceGuid))
+        _resultsCache[param.InstanceGuid] = GetParamDataSizeAsync(param, SerializationType);
+      else
+        _resultsCache.Add(param.InstanceGuid, GetParamDataSizeAsync(param, SerializationType));
+    }
+
+    private bool RemoveParameter(IGH_Param param)
+    {
+      return param != null
+             && _resultsCache.ContainsKey(param.InstanceGuid)
+             && _resultsCache.Remove(param.InstanceGuid);
+    }
+
+    public void Add(IGH_DocumentObject ghDocumentObject)
+    {
+      switch (ghDocumentObject)
+      {
+        case IGH_Param param:
+          AddParamEvents(param);
+          AddParameter(param);
+          break;
+        case IGH_Component component:
+          // A component's attributes change when a param is added/deleted from the component
+          AddComponentEvents(component);
+          component.Params.Input.ForEach(p =>
+          {
+            AddParamEvents(p);
+            AddParameter(p);
+          });
+          break;
+      }
+    }
+
+    public void Remove(IGH_DocumentObject obj)
+    {
+      switch (obj)
+      {
+        case IGH_Param param:
+          RemoveParamEvents(param);
+          RemoveParameter(param);
+          break;
+        case IGH_Component component:
+          // A component's attributes change when a param is added/deleted from the component
+          RemoveComponentEvents(component);
+          component.Params.Input.ForEach(p =>
+          {
+            RemoveParamEvents(p);
+            RemoveParameter(p);
+          });
+          break;
+      }
+    }
+    
     public void Compute(GH_Document doc)
     {
       CancelTokenSource.Cancel();
@@ -42,21 +89,32 @@ namespace SizeAnalyzer
           switch (obj)
           {
             case IGH_Param param:
-              Add(param);
+              AddParameter(param);
               break;
             case IGH_Component component:
               GetComponentParamsWithLocalData(component)
                 .ToList()
-                .ForEach(Add);
+                .ForEach(AddParameter);
               break;
           }
         });
     }
 
+    private ParamStatus GetParamStatus(Task<double> task)
+    {
+      if (task == null) return ParamStatus.Untracked;
+      if (task.IsCanceled || task.IsFaulted) return ParamStatus.Error;
+      if (task.IsCompleted)
+        return task.Result >= Settings.ParamThreshold ? ParamStatus.OverThreshold : ParamStatus.UnderThreshold;
+      return ParamStatus.Loading;
+    }
+
+    public ParamStatus GetParamStatus(IGH_Param p) => GetParamStatus(Get(p));
+
     public IEnumerable<IGH_DocumentObject> GetParams(double threshold)
     {
       return _resultsCache
-        .Where(pair => pair.Value.IsCompleted && pair.Value.Result >= threshold)
+        .Where(pair => GetParamStatus(pair.Value) == ParamStatus.OverThreshold)
         .Select(kv => Instances.ActiveCanvas.Document.FindObject(kv.Key, false));
     }
 
@@ -65,31 +123,17 @@ namespace SizeAnalyzer
       return _resultsCache.Where(pair => pair.Value.IsCompleted).Sum(pair => pair.Value.Result);
     }
 
-    private void Add(IGH_Param param)
-    {
-      if (_resultsCache.ContainsKey(param.InstanceGuid))
-        _resultsCache[param.InstanceGuid] = GetParamDataSizeAsync(param, SerializationType);
-      else
-        _resultsCache.Add(param.InstanceGuid, GetParamDataSizeAsync(param, SerializationType));
-    }
-
-    private void Remove(IGH_Param param)
-    {
-      if (_resultsCache.ContainsKey(param.InstanceGuid))
-        _resultsCache.Remove(param.InstanceGuid);
-    }
-
     public Task<double> Get(IGH_Param param)
     {
       return !_resultsCache.ContainsKey(param.InstanceGuid) ? null : _resultsCache[param.InstanceGuid];
     }
 
-    private IEnumerable<IGH_Param> GetComponentParamsWithLocalData(IGH_Component component)
+    private static IEnumerable<IGH_Param> GetComponentParamsWithLocalData(IGH_Component component)
     {
       return component.Params.Input.Where(cParam => cParam.DataType == GH_ParamData.local);
     }
 
-    private IEnumerable<IGH_DocumentObject> GetAllDocumentObjectsWithLocalData(GH_Document doc)
+    private static IEnumerable<IGH_DocumentObject> GetAllDocumentObjectsWithLocalData(GH_Document doc)
     {
       foreach (var obj in doc.Objects)
         switch (obj)
@@ -115,7 +159,7 @@ namespace SizeAnalyzer
       return await task;
     }
 
-    private double GetParamDataSize(IGH_Param param,
+    private static double GetParamDataSize(IGH_Param param,
       SerializationType serializationType = SerializationType.Binary)
     {
       var archive = new GH_Archive();
@@ -139,71 +183,25 @@ namespace SizeAnalyzer
       }
     }
 
-    public void OnDocumentChanged(GH_Canvas c, GH_CanvasDocumentChangedEventArgs ce)
+
+    private void AddParamEvents(IGH_Param p)
     {
-      if (ce.OldDocument != null)
-      {
-        ce.OldDocument.ObjectsAdded -= OnObjectsAdded;
-        ce.OldDocument.ObjectsDeleted -= OnObjectsDeleted;
-      }
-
-      if (ce.NewDocument != null)
-      {
-        ce.NewDocument.ObjectsAdded += OnObjectsAdded;
-        ce.NewDocument.ObjectsDeleted += OnObjectsDeleted;
-
-        Compute(ce.NewDocument);
-      }
+      p.ObjectChanged += OnObjectChanged;
     }
 
-    private void OnObjectsDeleted(object sender, GH_DocObjectEventArgs e)
+    private void RemoveParamEvents(IGH_Param p)
     {
-      e.Objects.ToList().ForEach(RemoveObject);
+      p.ObjectChanged -= OnObjectChanged;
     }
 
-    private void RemoveObject(IGH_DocumentObject obj)
+    private void AddComponentEvents(IGH_Component c)
     {
-      switch (obj)
-      {
-        case IGH_Param param:
-          param.ObjectChanged -= OnObjectChanged;
-          Remove(param);
-          break;
-        case IGH_Component component:
-          // A component's attributes change when a param is added/deleted from the component
-          component.AttributesChanged -= OnAttributesChanged;
-          component.Params.Input.ForEach(p =>
-          {
-            p.ObjectChanged -= OnObjectChanged;
-            Remove(p);
-          });
-          break;
-      }
+      c.AttributesChanged += OnAttributesChanged;
     }
 
-    private void OnObjectsAdded(object sender, GH_DocObjectEventArgs e)
+    private void RemoveComponentEvents(IGH_Component c)
     {
-      foreach (var ghDocumentObject in e.Objects) AddObject(ghDocumentObject);
-    }
-
-    private void AddObject(IGH_DocumentObject ghDocumentObject)
-    {
-      switch (ghDocumentObject)
-      {
-        case IGH_Param param:
-          param.ObjectChanged += OnObjectChanged;
-          Add(param);
-          break;
-        case IGH_Component component:
-          // A component's attributes change when a param is added/deleted from the component
-          component.AttributesChanged += OnAttributesChanged;
-          component.Params.Input.ForEach(p =>
-          {
-            p.ObjectChanged += OnObjectChanged;
-            Add(p);
-          });
-          break;
-      }
+      c.AttributesChanged -= OnAttributesChanged;
     }
 
     private void OnAttributesChanged(IGH_DocumentObject sender, GH_AttributesChangedEventArgs e)
@@ -212,9 +210,9 @@ namespace SizeAnalyzer
         component.Params.Input.ForEach(p =>
         {
           // Re-register `OnObjectChanged` on all params of that component
-          p.ObjectChanged -= OnObjectChanged;
-          p.ObjectChanged += OnObjectChanged;
-          Add(p);
+          RemoveParamEvents(p);
+          AddParamEvents(p);
+          AddParameter(p);
         });
     }
 
@@ -224,10 +222,13 @@ namespace SizeAnalyzer
         switch (p.DataType)
         {
           case GH_ParamData.local:
-            Add(p);
+            AddParameter(p);
             break;
+          case GH_ParamData.unknown:
+          case GH_ParamData.@void:
+          case GH_ParamData.remote:
           default:
-            Remove(p);
+            RemoveParameter(p);
             break;
         }
     }

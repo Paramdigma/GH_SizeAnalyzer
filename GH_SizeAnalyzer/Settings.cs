@@ -59,7 +59,7 @@ namespace SizeAnalyzer
           return;
         _showWidget = value;
         ShowChanged?.Invoke(value);
-        Instances.InvalidateCanvas();
+        Instances.RedrawCanvas();
       }
     }
 
@@ -72,7 +72,7 @@ namespace SizeAnalyzer
           return;
         _showGlobalWarnings = value;
         ShowGlobalWarningsChanged?.Invoke(value);
-        Instances.InvalidateCanvas();
+        Instances.RedrawCanvas();
       }
     }
 
@@ -85,7 +85,7 @@ namespace SizeAnalyzer
           return;
         _showParamWarnings = value;
         ShowParamWarningsChanged?.Invoke(value);
-        Instances.InvalidateCanvas();
+        Instances.RedrawCanvas();
       }
     }
 
@@ -97,7 +97,7 @@ namespace SizeAnalyzer
         if (Math.Abs(_paramThreshold - value) < 0.01) return;
         _paramThreshold = value;
         ParamThresholdChanged?.Invoke(value);
-        Instances.InvalidateCanvas();
+        Instances.RedrawCanvas();
       }
     }
 
@@ -109,6 +109,7 @@ namespace SizeAnalyzer
         if (Math.Abs(_globalThreshold - value) < 0.01) return;
         _globalThreshold = value;
         GlobalThresholdChanged?.Invoke(value);
+        Instances.RedrawCanvas();
       }
     }
 

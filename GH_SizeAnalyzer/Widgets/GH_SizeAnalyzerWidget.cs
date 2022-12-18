@@ -8,25 +8,21 @@ using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.GUI.Widgets;
 using Grasshopper.Kernel;
-using Grasshopper.Kernel.Special;
 using SizeAnalyzer.Properties;
 using SizeAnalyzer.UI;
-using GH_DigitScroller = Grasshopper.GUI.GH_DigitScroller;
 
 namespace SizeAnalyzer.Widgets
 {
   public class GH_SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
   {
-    private readonly int radius = 4;
+    public readonly Calculator Calculator;
+    private const int Radius = 4;
 
     private List<IGH_Param> _drawnIcons = new List<IGH_Param>();
 
     private SizeAnalyzerSearchDialog _searchDialog;
 
-    public Calculator Calculator;
-
-
-    private Rectangle WidgetArea;
+    private Rectangle _widgetArea;
 
     public GH_SizeAnalyzerWidget()
     {
@@ -73,19 +69,89 @@ namespace SizeAnalyzer.Widgets
     public override bool Contains(Point ptControl, PointF ptCanvas)
     {
       // Check if mouse is inside fixed widget area
-      if (WidgetArea.Contains(ptControl))
-
-        return true;
-
-      // If not check the drawn icons.
-      return _drawnIcons.Any(p => DrawUtils.GetParamIconRectangleF(p, radius).Contains(ptCanvas));
+      return _widgetArea.Contains(ptControl) ||
+             // If not check the drawn icons.
+             _drawnIcons.Any(p => DrawUtils.GetParamIconRectangleF(p, Radius).Contains(ptCanvas));
     }
 
-    public override bool IsTooltipRegion(PointF canvas_coordinate)
+    public override bool IsTooltipRegion(PointF canvasCoordinate)
     {
-      var isTooltipRegion = base.IsTooltipRegion(canvas_coordinate);
+      var isTooltipRegion = base.IsTooltipRegion(canvasCoordinate);
 
       return isTooltipRegion;
+    }
+
+    public override void AppendToMenu(ToolStripDropDownMenu menu)
+    {
+      base.AppendToMenu(menu);
+
+      GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog", (o, e) => { ShowSearchDialog(); });
+
+      GH_DocumentObject.Menu_AppendSeparator(menu);
+
+      CreateContextMenuSettings(
+        menu,
+        "Document threshold",
+        Settings.GlobalThreshold,
+        new List<double> { 10, 20, 50, 100 },
+        (value) => Settings.GlobalThreshold = value
+      );
+
+      CreateContextMenuSettings(
+        menu,
+        "Parameter threshold",
+        Settings.ParamThreshold,
+        new List<double> { 1, 2, 5, 10 },
+        (value) => Settings.ParamThreshold = value
+      );
+    }
+    
+    private static void CreateContextMenuSettings(ToolStripDropDownMenu menu, string name,
+      double value, List<double> options, Action<double> onClick)
+    {
+      var item = GH_DocumentObject.Menu_AppendItem(menu, name);
+
+      foreach (var option in options)
+        GH_DocumentObject.Menu_AppendItem(
+          item.DropDown,
+          $"{option}mb", (e, a) => onClick(option),
+          null,
+          true,
+          Math.Abs(value - option) < 0.01);
+
+      // Create custom option
+      var custom = GH_DocumentObject.Menu_AppendItem(item.DropDown, "Custom");
+      var digitScroller = DrawUtils.SetupMenuDigitScroller();
+      digitScroller.Value = Convert.ToDecimal(value);
+      digitScroller.ValueChanged += (sender, args) => onClick(Convert.ToDouble(args.Value));
+      custom.Checked = !options.Any(option => Math.Abs(value - option) < 0.01);
+      GH_DocumentObject.Menu_AppendCustomItem(custom.DropDown, digitScroller);
+    }
+
+    private void ShowSearchDialog()
+    {
+      SearchDialog.Show();
+      if (!SearchDialog.Focused)
+        SearchDialog.Focus();
+    }
+
+    public override void SetupTooltip(PointF canvasPoint, GH_TooltipDisplayEventArgs e)
+    {
+      var param = _drawnIcons.FirstOrDefault(p => DrawUtils.GetParamIconRectangleF(p, Radius).Contains(canvasPoint));
+      base.SetupTooltip(canvasPoint, e);
+
+      if (param == null)
+      {
+        e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";
+        return;
+      }
+
+      var task = Calculator.Get(param);
+      if (!task.IsCompleted) return;
+
+      e.Title = "Warning: Internal data is too big";
+      e.Text = "This parameter's data is TOO BIG.";
+      e.Description = $"Data size = {Math.Round(task.Result, 2)}mb\nThreshold = {Settings.ParamThreshold}mb";
     }
 
     public override void Render(GH_Canvas canvas)
@@ -98,106 +164,11 @@ namespace SizeAnalyzer.Widgets
 
       // Draw here anything that has to be drawn "per-component" (i.e. the bubbles with the size)
       _drawnIcons = new List<IGH_Param>();
-      var drawableParams = GetAllParamsWithLocalData(canvas.Document);
-      foreach (var p in drawableParams)
-      {
-        var res = Calculator.Get(p);
-        if (res == null) continue;
-        switch (res.IsCompleted)
-        {
-          case false when !res.IsCanceled && !res.IsFaulted:
-          {
-            if (GH_Canvas.ZoomFadeLow != 0)
-            {
-              DrawUtils.DrawLoadingIcon(canvas, p, radius);
-              _drawnIcons.Add(p);
-            }
-
-            break;
-          }
-          case true when res.Result > Settings.ParamThreshold:
-          {
-            if (GH_Canvas.ZoomFadeLow == 0)
-            {
-              DrawUtils.DrawParamIcon_ZoomedOut(canvas, p);
-            }
-            else
-            {
-              DrawUtils.DrawParamIcon(canvas, p, radius);
-              _drawnIcons.Add(p);
-            }
-
-            break;
-          }
-        }
-      }
+      DrawUtils.GetAllParamsWithLocalData(canvas.Document)
+        .ToList()
+        .ForEach(p => DrawParamIcon(canvas, p));
     }
 
-    public override void AppendToMenu(ToolStripDropDownMenu menu)
-    {
-      base.AppendToMenu(menu);
-
-      GH_DocumentObject.Menu_AppendItem(menu, "Open search dialog", (o, e) =>
-      {
-        SearchDialog.Show();
-        SearchDialog.Focus();
-      });
-      GH_DocumentObject.Menu_AppendSeparator(menu);
-
-      var itemA = GH_DocumentObject.Menu_AppendItem(menu, "Document Threshold");
-      itemA.Enabled = false;
-      // Create fixed megabyte options
-      var optionsGlobal = new List<double> { 10, 25, 50, 100 };
-      foreach (var option in optionsGlobal)
-        GH_DocumentObject.Menu_AppendItem(menu, $"{option}mb", (e, a) => Settings.GlobalThreshold = option,
-          null, true, Math.Abs(Settings.GlobalThreshold - option) < 0.01);
-
-      // Create custom option
-      var customItemg = GH_DocumentObject.Menu_AppendItem(menu, "Custom");
-      var digitScrollerg = new GH_DigitScroller
-      {
-        Height = 40,
-        Width = 200,
-        DecimalPlaces = 0,
-        MaximumValue = 100,
-        MinimumValue = Convert.ToDecimal(1),
-        Value = Convert.ToDecimal(Settings.GlobalThreshold)
-      };
-
-      digitScrollerg.ValueChanged += (sender, args) => Settings.GlobalThreshold = Convert.ToDouble(args.Value);
-      customItemg.Checked = !optionsGlobal.Any(option => Math.Abs(Settings.GlobalThreshold - option) < 0.01);
-      GH_DocumentObject.Menu_AppendCustomItem(customItemg.DropDown, digitScrollerg);
-
-
-      GH_DocumentObject.Menu_AppendSeparator(menu);
-      var itemB = GH_DocumentObject.Menu_AppendItem(menu, "Params Threshold");
-      itemB.Enabled = false;
-      // Create fixed megabyte options
-      var optionsParams = new List<double> { 1, 2, 5, 10 };
-      foreach (var option in optionsParams)
-        GH_DocumentObject.Menu_AppendItem(menu, $"{option}mb", (e, a) => Settings.ParamThreshold = option, null,
-          true, Math.Abs(Settings.ParamThreshold - option) < 0.01);
-
-      // Create custom option
-      var customItem = GH_DocumentObject.Menu_AppendItem(menu, "Custom");
-      var digitScroller = new GH_DigitScroller
-      {
-        Height = 40,
-        Width = 200,
-        DecimalPlaces = 0,
-        MaximumValue = 100,
-        MinimumValue = Convert.ToDecimal(1),
-        Value = Convert.ToDecimal(Settings.ParamThreshold)
-      };
-
-      digitScroller.ValueChanged += (sender, args) => Settings.ParamThreshold = Convert.ToDouble(args.Value);
-      customItem.Checked = !optionsParams.Any(option => Math.Abs(Settings.ParamThreshold - option) < 0.01);
-      GH_DocumentObject.Menu_AppendCustomItem(customItem.DropDown, digitScroller);
-    }
-
-    /// <summary>
-    ///   Draws the fixed position part of the Widget
-    /// </summary>
     protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
       Rectangle controlFrame, RectangleF canvasFrame)
     {
@@ -206,7 +177,7 @@ namespace SizeAnalyzer.Widgets
       var total = Calculator.GetTotal();
       if (total < Settings.GlobalThreshold) return;
 
-      WidgetArea = controlFrame; // Update the WidgetArea
+      _widgetArea = controlFrame; // Update the WidgetArea
 
       var graphics = canvas.Graphics; // Get the graphics instance
 
@@ -232,54 +203,45 @@ namespace SizeAnalyzer.Widgets
       blackPen.Dispose();
     }
 
-    public static IEnumerable<IGH_Param> GetAllParamsWithLocalData(GH_Document doc)
+    private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
     {
-      foreach (var obj in doc.Objects)
-        switch (obj)
-        {
-          case IGH_Param param:
-            var paramType = param.GetType();
-
-            // In general, skip any type from the `Special` namespace
-            var specialNamespace = typeof(GH_NumberSlider).Namespace;
-            var shouldSkipNamespace = paramType.Namespace == specialNamespace;
-
-            // With some exceptions
-            var isException = new List<Type> { typeof(GH_Panel) }.Contains(paramType);
-
-            var shouldSkip = shouldSkipNamespace && !isException;
-
-            if (!shouldSkip && param.DataType == GH_ParamData.local)
-              yield return param;
-            break;
-          case IGH_Component component:
-          {
-            var localDataParams =
-              component.Params.Input.Where(cParam => cParam.DataType == GH_ParamData.local);
-            foreach (var cParam in localDataParams)
-              yield return cParam;
-            break;
-          }
-        }
+      var status = Calculator.GetParamStatus(p);
+      switch (status)
+      {
+        case ParamStatus.Loading:
+          DrawLoadingIcon(canvas, p);
+          break;
+        case ParamStatus.OverThreshold:
+          DrawWarningIcon(canvas, p);
+          break;
+        case ParamStatus.UnderThreshold:
+        case ParamStatus.Untracked:
+        case ParamStatus.Error:
+        default:
+          break;
+      }
     }
 
-    public override void SetupTooltip(PointF canvasPoint, GH_TooltipDisplayEventArgs e)
+    private void DrawWarningIcon(GH_Canvas canvas, IGH_Param p)
     {
-      var param = _drawnIcons.FirstOrDefault(p => DrawUtils.GetParamIconRectangleF(p, radius).Contains(canvasPoint));
-      base.SetupTooltip(canvasPoint, e);
-
-      if (param == null)
+      if (GH_Canvas.ZoomFadeLow == 0)
       {
-        e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";
-        return;
+        DrawUtils.DrawParamIcon_ZoomedOut(canvas, p);
       }
+      else
+      {
+        DrawUtils.DrawParamIcon(canvas, p, Radius);
+        _drawnIcons.Add(p);
+      }
+    }
 
-      var task = Calculator.Get(param);
-      if (!task.IsCompleted) return;
-
-      e.Title = "Warning: Internal data is too big";
-      e.Text = "This parameter's data is TOO BIG.";
-      e.Description = $"Data size = {Math.Round(task.Result, 2)}mb\nThreshold = {Settings.ParamThreshold}mb";
+    private void DrawLoadingIcon(GH_Canvas canvas, IGH_Param p)
+    {
+      if (GH_Canvas.ZoomFadeLow != 0)
+      {
+        DrawUtils.DrawLoadingIcon(canvas, p, Radius);
+        _drawnIcons.Add(p);
+      }
     }
   }
 }
