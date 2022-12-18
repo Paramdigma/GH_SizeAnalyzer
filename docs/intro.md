@@ -37,7 +37,7 @@ This recommendation is a recipe for disaster, as surely some work will be lost a
 
 You can prevent the auto-save from slowing down if instead the data is stored in an outside source, which can be a Rhino document, or a plain old text file. Rhino is much better at storing data in an `rhp` file than Grasshopper is at doing the same in a `gh` file.
 
-Once the data is no longer stored in Grasshopper, you can reference back either by using `referenced objects`, a `grasshpper pipeline` or even `data input/output` nodes.
+Once the data is no longer stored in Grasshopper, you can reference back either by using `referenced objects`, a `grasshopper pipeline` or even `data input/output` nodes.
 
 ::: tip :bulb: TIP:
 

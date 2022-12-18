@@ -2,7 +2,7 @@ export default {
   base: "/GH_SizeAnalyzer/",
   title: "GH Size Analyzer",
   description:
-    "A grasshopper component to analyze size of internal data in stored in the document.",
+    "A grasshopper component to analyze size of internal data stored in a document.",
   themeConfig: {
     footer: {
       message:
