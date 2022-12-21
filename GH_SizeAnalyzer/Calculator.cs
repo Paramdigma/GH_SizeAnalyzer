@@ -8,25 +8,32 @@ using GH_IO.Serialization;
 using Grasshopper;
 using Grasshopper.Kernel;
 using Rhino;
+using SizeAnalyzer.Schedulers;
 
 namespace SizeAnalyzer
 {
   public class Calculator
   {
     private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
-
+    private TaskFactory<double> factory;
     public CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
 
     public SerializationType SerializationType = SerializationType.Xml;
 
+    public Calculator()
+    {
+      var scheduler = new LimitedConcurrencyLevelTaskScheduler(4);
+      factory = new TaskFactory<double>(scheduler);
+    }
     private void AddParameter(IGH_Param param)
     {
       if (param == null)
         return;
+      var task = factory.StartNew(() => GetParamDataSize(param, SerializationType));
       if (_resultsCache.ContainsKey(param.InstanceGuid))
-        _resultsCache[param.InstanceGuid] = GetParamDataSizeAsync(param, SerializationType);
+        _resultsCache[param.InstanceGuid] = task;
       else
-        _resultsCache.Add(param.InstanceGuid, GetParamDataSizeAsync(param, SerializationType));
+        _resultsCache.Add(param.InstanceGuid, task);
     }
 
     private bool RemoveParameter(IGH_Param param)
@@ -109,6 +116,8 @@ namespace SizeAnalyzer
       return ParamStatus.Loading;
     }
 
+    public Dictionary<Guid, Task<double>> Results => _resultsCache;
+    
     public ParamStatus GetParamStatus(IGH_Param p) => GetParamStatus(Get(p));
 
     public IEnumerable<IGH_DocumentObject> GetParams(double threshold)
@@ -150,15 +159,7 @@ namespace SizeAnalyzer
           }
         }
     }
-
-    private async Task<double> GetParamDataSizeAsync(IGH_Param param,
-      SerializationType serializationType = SerializationType.Binary)
-    {
-      var task = Task.Run(() => GetParamDataSize(param, serializationType), CancelTokenSource.Token);
-      await task.ContinueWith(_ => RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas));
-      return await task;
-    }
-
+    
     private static double GetParamDataSize(IGH_Param param,
       SerializationType serializationType = SerializationType.Binary)
     {
@@ -166,21 +167,26 @@ namespace SizeAnalyzer
       archive.CreateTopLevelNode("param size archive");
       archive.AppendObject(param, param.InstanceGuid.ToString());
 
+      var size = 0.0;
       switch (serializationType)
       {
         case SerializationType.Xml:
           var xml = archive.Serialize_Xml();
           var byteSize = (double)Encoding.Unicode.GetByteCount(xml);
-          return byteSize / 1048576;
+          size = byteSize / 1048576;
+          break;
 
         case SerializationType.Binary:
           var byteArray = archive.Serialize_Binary();
-          return byteArray.Length / 1048576;
+          size = ((double)byteArray.Length) / 1048576; 
+          break;
 
         default:
           throw new ArgumentOutOfRangeException(nameof(serializationType), serializationType,
             "Incorrect Serialization Type was passed.");
       }
+      RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas);
+      return size;
     }
 
 
