@@ -16,20 +16,23 @@ namespace SizeAnalyzer
   {
     private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
     private TaskFactory<double> factory;
+    private int maxDegreeOfParallelism = 4;
+    
     public CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
-
+    public EventHandler ParamTaskFinished;
     public SerializationType SerializationType = SerializationType.Xml;
-
+    
     public Calculator()
     {
-      var scheduler = new LimitedConcurrencyLevelTaskScheduler(4);
+      var scheduler = new LimitedConcurrencyLevelTaskScheduler(maxDegreeOfParallelism);
       factory = new TaskFactory<double>(scheduler);
     }
     private void AddParameter(IGH_Param param)
     {
       if (param == null)
-        return;
+        throw new ArgumentNullException(nameof(param));
       var task = factory.StartNew(() => GetParamDataSize(param, SerializationType));
+      task.ContinueWith((t) => ParamTaskFinished?.Invoke(param, null), TaskScheduler.Default);
       if (_resultsCache.ContainsKey(param.InstanceGuid))
         _resultsCache[param.InstanceGuid] = task;
       else
@@ -38,13 +41,14 @@ namespace SizeAnalyzer
 
     private bool RemoveParameter(IGH_Param param)
     {
-      return param != null
-             && _resultsCache.ContainsKey(param.InstanceGuid)
+      if (param == null) throw new ArgumentNullException(nameof(param));
+      return _resultsCache.ContainsKey(param.InstanceGuid)
              && _resultsCache.Remove(param.InstanceGuid);
     }
 
     public void Add(IGH_DocumentObject ghDocumentObject)
     {
+      if (ghDocumentObject == null) throw new ArgumentNullException(nameof(ghDocumentObject));
       switch (ghDocumentObject)
       {
         case IGH_Param param:
@@ -65,6 +69,7 @@ namespace SizeAnalyzer
 
     public void Remove(IGH_DocumentObject obj)
     {
+      if (obj == null) throw new ArgumentNullException(nameof(obj));
       switch (obj)
       {
         case IGH_Param param:
@@ -85,6 +90,7 @@ namespace SizeAnalyzer
     
     public void Compute(GH_Document doc)
     {
+      if (doc == null) throw new ArgumentNullException(nameof(doc));
       CancelTokenSource.Cancel();
       CancelTokenSource = new CancellationTokenSource();
       _resultsCache = new Dictionary<Guid, Task<double>>();
@@ -105,6 +111,7 @@ namespace SizeAnalyzer
               break;
           }
         });
+      
     }
 
     private ParamStatus GetParamStatus(Task<double> task)
@@ -167,7 +174,7 @@ namespace SizeAnalyzer
       archive.CreateTopLevelNode("param size archive");
       archive.AppendObject(param, param.InstanceGuid.ToString());
 
-      var size = 0.0;
+      double size;
       switch (serializationType)
       {
         case SerializationType.Xml:
@@ -185,7 +192,6 @@ namespace SizeAnalyzer
           throw new ArgumentOutOfRangeException(nameof(serializationType), serializationType,
             "Incorrect Serialization Type was passed.");
       }
-      RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas);
       return size;
     }
 

@@ -8,6 +8,7 @@ using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.GUI.Widgets;
 using Grasshopper.Kernel;
+using Rhino;
 using SizeAnalyzer.Properties;
 using SizeAnalyzer.UI;
 
@@ -27,6 +28,7 @@ namespace SizeAnalyzer.Widgets
     public GH_SizeAnalyzerWidget()
     {
       Calculator = new Calculator();
+      Calculator.ParamTaskFinished += (sender, args) => RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas);
     }
 
     public override bool Visible
