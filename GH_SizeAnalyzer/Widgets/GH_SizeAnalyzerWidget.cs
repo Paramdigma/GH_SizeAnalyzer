@@ -8,7 +8,6 @@ using Grasshopper.GUI;
 using Grasshopper.GUI.Canvas;
 using Grasshopper.GUI.Widgets;
 using Grasshopper.Kernel;
-using Rhino;
 using SizeAnalyzer.Properties;
 using SizeAnalyzer.UI;
 
@@ -16,19 +15,17 @@ namespace SizeAnalyzer.Widgets
 {
   public class GH_SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
   {
-    public readonly Calculator Calculator;
+    public CalculatorDocumentWatcher Watcher = new CalculatorDocumentWatcher();
     private const int Radius = 4;
 
     private List<IGH_Param> _drawnIcons = new List<IGH_Param>();
 
-    private SizeAnalyzerSearchDialog _searchDialog;
+    private SizeAnalyzerSearchDialog? _searchDialog;
 
     private Rectangle _widgetArea;
 
     public GH_SizeAnalyzerWidget()
     {
-      Calculator = new Calculator();
-      Calculator.ParamTaskFinished += (sender, args) => RhinoApp.InvokeOnUiThread((Action)Instances.InvalidateCanvas);
     }
 
     public override bool Visible
@@ -56,12 +53,12 @@ namespace SizeAnalyzer.Widgets
 
     public override bool TooltipEnabled => true;
 
-    private SizeAnalyzerSearchDialog SearchDialog
+    protected SizeAnalyzerSearchDialog SearchDialog
     {
       get
       {
         if (_searchDialog != null) return _searchDialog;
-        _searchDialog = new SizeAnalyzerSearchDialog(Calculator);
+        _searchDialog = new SizeAnalyzerSearchDialog(Watcher.Calculator);
         _searchDialog.Canvas = Instances.ActiveCanvas;
         _searchDialog.FormClosed += (s, e) => _searchDialog = null;
         return _searchDialog;
@@ -148,8 +145,8 @@ namespace SizeAnalyzer.Widgets
         return;
       }
 
-      var task = Calculator.Get(param);
-      if (!task.IsCompleted) return;
+      var task = Watcher.Calculator.Get(param);
+      if (task is { IsCompleted: false }) return;
 
       e.Title = "Warning: Internal data is too big";
       e.Text = "This parameter's data is TOO BIG.";
@@ -176,7 +173,7 @@ namespace SizeAnalyzer.Widgets
     {
       if (Instances.ActiveCanvas.Document == null) return; // Skip if no document
       if (!Settings.ShowGlobalWarnings) return;
-      var total = Calculator.GetTotal();
+      var total = Watcher.Calculator.GetTotal();
       if (total < Settings.GlobalThreshold) return;
 
       _widgetArea = controlFrame; // Update the WidgetArea
@@ -207,7 +204,7 @@ namespace SizeAnalyzer.Widgets
 
     private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
     {
-      var status = Calculator.GetParamStatus(p);
+      var status = Watcher.Calculator.GetParamStatus(p);
       switch (status)
       {
         case ParamStatus.Loading:

@@ -10,6 +10,7 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
         <RootNamespace>SizeAnalyzer</RootNamespace>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>

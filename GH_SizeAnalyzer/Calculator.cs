@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using GH_IO.Serialization;
 using Grasshopper;
 using Grasshopper.Kernel;
-using Rhino;
 using SizeAnalyzer.Schedulers;
 
 namespace SizeAnalyzer
@@ -15,106 +13,85 @@ namespace SizeAnalyzer
   public class Calculator
   {
     private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
-    private TaskFactory<double> factory;
-    private int maxDegreeOfParallelism = 4;
-    
-    public CancellationTokenSource CancelTokenSource = new CancellationTokenSource();
-    public EventHandler ParamTaskFinished;
+    private readonly TaskFactory<double> _factory;
+    private const int MaxDegreeOfParallelism = 4;
+
+    public EventHandler? ParamTaskFinished;
+    public EventHandler? ComputeTaskFinished;
+
     public SerializationType SerializationType = SerializationType.Xml;
-    
+
     public Calculator()
     {
-      var scheduler = new LimitedConcurrencyLevelTaskScheduler(maxDegreeOfParallelism);
-      factory = new TaskFactory<double>(scheduler);
+      var scheduler = new LimitedConcurrencyLevelTaskScheduler(MaxDegreeOfParallelism);
+      _factory = new TaskFactory<double>(scheduler);
     }
-    private void AddParameter(IGH_Param param)
+
+    private Task AddParameter(IGH_Param param)
     {
       if (param == null)
         throw new ArgumentNullException(nameof(param));
-      var task = factory.StartNew(() => GetParamDataSize(param, SerializationType));
-      task.ContinueWith((t) => ParamTaskFinished?.Invoke(param, null), TaskScheduler.Default);
+      var task = _factory.StartNew(() => GetParamDataSize(param, SerializationType));
+      var continuation = task.ContinueWith((t) => ParamTaskFinished?.Invoke(param, null), TaskScheduler.Default);
       if (_resultsCache.ContainsKey(param.InstanceGuid))
         _resultsCache[param.InstanceGuid] = task;
       else
         _resultsCache.Add(param.InstanceGuid, task);
+      return continuation;
     }
 
-    private bool RemoveParameter(IGH_Param param)
+    private void RemoveParameter(IGH_Param param)
     {
       if (param == null) throw new ArgumentNullException(nameof(param));
-      return _resultsCache.ContainsKey(param.InstanceGuid)
-             && _resultsCache.Remove(param.InstanceGuid);
+      if (_resultsCache.ContainsKey(param.InstanceGuid))
+        _resultsCache.Remove(param.InstanceGuid);
     }
 
-    public void Add(IGH_DocumentObject ghDocumentObject)
+    public static void ObjectAction(IGH_DocumentObject docObject, Action<IGH_Param>? parameterAction,
+      Action<IGH_Component>? componentAction)
     {
-      if (ghDocumentObject == null) throw new ArgumentNullException(nameof(ghDocumentObject));
-      switch (ghDocumentObject)
+      if (docObject == null) throw new ArgumentNullException(nameof(docObject));
+      switch (docObject)
       {
         case IGH_Param param:
-          AddParamEvents(param);
-          AddParameter(param);
+          parameterAction?.Invoke(param);
           break;
         case IGH_Component component:
-          // A component's attributes change when a param is added/deleted from the component
-          AddComponentEvents(component);
-          component.Params.Input.ForEach(p =>
-          {
-            AddParamEvents(p);
-            AddParameter(p);
-          });
+          componentAction?.Invoke(component);
+          if (parameterAction != null)
+            component.Params.Input.ForEach(parameterAction);
           break;
       }
     }
 
-    public void Remove(IGH_DocumentObject obj)
-    {
-      if (obj == null) throw new ArgumentNullException(nameof(obj));
-      switch (obj)
-      {
-        case IGH_Param param:
-          RemoveParamEvents(param);
-          RemoveParameter(param);
-          break;
-        case IGH_Component component:
-          // A component's attributes change when a param is added/deleted from the component
-          RemoveComponentEvents(component);
-          component.Params.Input.ForEach(p =>
-          {
-            RemoveParamEvents(p);
-            RemoveParameter(p);
-          });
-          break;
-      }
-    }
-    
-    public void Compute(GH_Document doc)
+    public void Add(IGH_DocumentObject docObject) => ObjectAction(docObject, p => AddParameter(p), null);
+    public void Remove(IGH_DocumentObject docObject) => ObjectAction(docObject, RemoveParameter, null);
+
+    public Task Compute(GH_Document doc)
     {
       if (doc == null) throw new ArgumentNullException(nameof(doc));
-      CancelTokenSource.Cancel();
-      CancelTokenSource = new CancellationTokenSource();
+      // Reset the cache
       _resultsCache = new Dictionary<Guid, Task<double>>();
 
-      GetAllDocumentObjectsWithLocalData(doc)
-        .ToList()
-        .ForEach(obj =>
+      var tasks = GetAllDocumentObjectsWithLocalData(doc)
+        .SelectMany(obj =>
         {
           switch (obj)
           {
             case IGH_Param param:
-              AddParameter(param);
-              break;
+              return new List<Task> { AddParameter(param) };
             case IGH_Component component:
-              GetComponentParamsWithLocalData(component)
-                .ToList()
-                .ForEach(AddParameter);
-              break;
+              return GetComponentParamsWithLocalData(component)
+                .Select(AddParameter);
+            default:
+              return new List<Task>();
           }
         });
-      
+      return Task.WhenAll(tasks)
+        .ContinueWith(res => ComputeTaskFinished?.Invoke(this, null), TaskScheduler.Default);
     }
 
-    private ParamStatus GetParamStatus(Task<double> task)
+    private static ParamStatus GetTaskStatus(Task<double>? task)
     {
       if (task == null) return ParamStatus.Untracked;
       if (task.IsCanceled || task.IsFaulted) return ParamStatus.Error;
@@ -123,14 +100,12 @@ namespace SizeAnalyzer
       return ParamStatus.Loading;
     }
 
-    public Dictionary<Guid, Task<double>> Results => _resultsCache;
-    
-    public ParamStatus GetParamStatus(IGH_Param p) => GetParamStatus(Get(p));
+    public ParamStatus GetParamStatus(IGH_Param p) => GetTaskStatus(Get(p));
 
     public IEnumerable<IGH_DocumentObject> GetParams(double threshold)
     {
       return _resultsCache
-        .Where(pair => GetParamStatus(pair.Value) == ParamStatus.OverThreshold)
+        .Where(pair => GetTaskStatus(pair.Value) == ParamStatus.OverThreshold)
         .Select(kv => Instances.ActiveCanvas.Document.FindObject(kv.Key, false));
     }
 
@@ -139,7 +114,7 @@ namespace SizeAnalyzer
       return _resultsCache.Where(pair => pair.Value.IsCompleted).Sum(pair => pair.Value.Result);
     }
 
-    public Task<double> Get(IGH_Param param)
+    public Task<double>? Get(IGH_Param param)
     {
       return !_resultsCache.ContainsKey(param.InstanceGuid) ? null : _resultsCache[param.InstanceGuid];
     }
@@ -166,8 +141,8 @@ namespace SizeAnalyzer
           }
         }
     }
-    
-    private static double GetParamDataSize(IGH_Param param,
+
+    private static double GetParamDataSize(IGH_InstanceDescription param,
       SerializationType serializationType = SerializationType.Binary)
     {
       var archive = new GH_Archive();
@@ -185,64 +160,15 @@ namespace SizeAnalyzer
 
         case SerializationType.Binary:
           var byteArray = archive.Serialize_Binary();
-          size = ((double)byteArray.Length) / 1048576; 
+          size = (double)byteArray.Length / 1048576;
           break;
 
         default:
           throw new ArgumentOutOfRangeException(nameof(serializationType), serializationType,
             "Incorrect Serialization Type was passed.");
       }
+
       return size;
-    }
-
-
-    private void AddParamEvents(IGH_Param p)
-    {
-      p.ObjectChanged += OnObjectChanged;
-    }
-
-    private void RemoveParamEvents(IGH_Param p)
-    {
-      p.ObjectChanged -= OnObjectChanged;
-    }
-
-    private void AddComponentEvents(IGH_Component c)
-    {
-      c.AttributesChanged += OnAttributesChanged;
-    }
-
-    private void RemoveComponentEvents(IGH_Component c)
-    {
-      c.AttributesChanged -= OnAttributesChanged;
-    }
-
-    private void OnAttributesChanged(IGH_DocumentObject sender, GH_AttributesChangedEventArgs e)
-    {
-      if (sender is IGH_Component component)
-        component.Params.Input.ForEach(p =>
-        {
-          // Re-register `OnObjectChanged` on all params of that component
-          RemoveParamEvents(p);
-          AddParamEvents(p);
-          AddParameter(p);
-        });
-    }
-
-    private void OnObjectChanged(IGH_DocumentObject sender, GH_ObjectChangedEventArgs e)
-    {
-      if (sender is IGH_Param p && e.Type == GH_ObjectEventType.Sources)
-        switch (p.DataType)
-        {
-          case GH_ParamData.local:
-            AddParameter(p);
-            break;
-          case GH_ParamData.unknown:
-          case GH_ParamData.@void:
-          case GH_ParamData.remote:
-          default:
-            RemoveParameter(p);
-            break;
-        }
     }
   }
 

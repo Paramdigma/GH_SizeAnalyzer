@@ -30,27 +30,24 @@ namespace SizeAnalyzer
 
       // Set the canvas as the widget's owner
       Widget.Owner = canvas;
+      
       // Finally, add the widget to the canvas.
       Instances.ActiveCanvas.Widgets.Add(Widget);
     }
     
-    private void OnObjectsAdded(object sender, GH_DocObjectEventArgs e) => e.Objects.ToList().ForEach(Widget.Calculator.Add);
-    private void OnObjectsDeleted(object sender, GH_DocObjectEventArgs e) => e.Objects.ToList().ForEach(Widget.Calculator.Remove);
     private void OnDocumentChanged(GH_Canvas c, GH_CanvasDocumentChangedEventArgs ce)
     {
       if (ce.OldDocument != null)
       {
-        ce.OldDocument.ObjectsAdded -= OnObjectsAdded;
-        ce.OldDocument.ObjectsDeleted -= OnObjectsDeleted;
+        if (Widget.Watcher.IsWatching)
+          Widget.Watcher.Stop();
+        Widget.Watcher.Document = null;
       }
 
-      if (ce.NewDocument != null)
-      {
-        ce.NewDocument.ObjectsAdded += OnObjectsAdded;
-        ce.NewDocument.ObjectsDeleted += OnObjectsDeleted;
-        
-        Widget.Calculator.Compute(ce.NewDocument);
-      }
+      if (ce.NewDocument == null) return;
+      
+      Widget.Watcher.Document = ce.NewDocument;
+      Widget.Watcher.Start();
     }
   }
 }
