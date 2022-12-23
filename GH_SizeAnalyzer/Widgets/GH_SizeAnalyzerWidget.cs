@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using Grasshopper;
@@ -15,18 +16,18 @@ namespace SizeAnalyzer.Widgets
 {
   public class GH_SizeAnalyzerWidget : GH_CanvasWidget_FixedObject
   {
-    public readonly Calculator Calculator;
+    public CalculatorDocumentWatcher Watcher = new CalculatorDocumentWatcher();
     private const int Radius = 4;
 
     private List<IGH_Param> _drawnIcons = new List<IGH_Param>();
 
-    private SizeAnalyzerSearchDialog _searchDialog;
+    private SizeAnalyzerSearchDialog? _searchDialog;
 
     private Rectangle _widgetArea;
 
     public GH_SizeAnalyzerWidget()
     {
-      Calculator = new Calculator();
+      WidgetCornerChanged(Settings.Corner);
     }
 
     public override bool Visible
@@ -45,21 +46,22 @@ namespace SizeAnalyzer.Widgets
     public override Bitmap Icon_24x24 => Resources.CalculatorIcon;
 
     // Defines which corner the widget will be drawn in
-    public override SizeF Ratio { get; set; } = new SizeF(0f, 1f);
+    public override SizeF Ratio { get; set; } = new SizeF(1f, 0f);
 
     // Defines the size of the controlRectangle to draw the widget in.
-    public override Size Size => new Size(Global_Proc.UiAdjust(200), Global_Proc.UiAdjust(60));
+    public override Size Size =>
+      new Size(Global_Proc.UiAdjust(80), (int)Global_Proc.UiAdjust(80 * (float)Math.Sqrt(3) / 2f));
 
-    public override int Padding => 10;
+    public override int Padding => 50;
 
     public override bool TooltipEnabled => true;
 
-    private SizeAnalyzerSearchDialog SearchDialog
+    protected SizeAnalyzerSearchDialog SearchDialog
     {
       get
       {
         if (_searchDialog != null) return _searchDialog;
-        _searchDialog = new SizeAnalyzerSearchDialog(Calculator);
+        _searchDialog = new SizeAnalyzerSearchDialog(Watcher.Calculator);
         _searchDialog.Canvas = Instances.ActiveCanvas;
         _searchDialog.FormClosed += (s, e) => _searchDialog = null;
         return _searchDialog;
@@ -93,7 +95,7 @@ namespace SizeAnalyzer.Widgets
         menu,
         "Document threshold",
         Settings.GlobalThreshold,
-        new List<double> { 10, 20, 50, 100 },
+        new List<double> { 1, 2, 5, 10 },
         (value) => Settings.GlobalThreshold = value
       );
 
@@ -101,12 +103,58 @@ namespace SizeAnalyzer.Widgets
         menu,
         "Parameter threshold",
         Settings.ParamThreshold,
-        new List<double> { 1, 2, 5, 10 },
+        new List<double> { 0.1, 0.2, 0.5, 1 },
         (value) => Settings.ParamThreshold = value
       );
+
+      GH_DocumentObject.Menu_AppendSeparator(menu);
+
+      CreateContextMenuCornerSettings(menu);
+
+      //CreateContextMenuSerialisationSettings(menu);
     }
-    
-    private static void CreateContextMenuSettings(ToolStripDropDownMenu menu, string name,
+
+    private static void CreateContextMenuSerialisationSettings(ToolStrip menu)
+    {
+      var parent = GH_DocumentObject.Menu_AppendItem(menu, "Serialisation Type");
+      GH_DocumentObject.Menu_AppendItem(
+        parent.DropDown,
+        "Binary (.gh)",
+        (sender, args) => Settings.SerializationType = SerializationType.Binary,
+        null,
+        true,
+        Settings.SerializationType == SerializationType.Binary);
+      GH_DocumentObject.Menu_AppendItem(
+        parent.DropDown,
+        "XML (.gha)",
+        (sender, args) => Settings.SerializationType = SerializationType.Xml,
+        null,
+        true,
+        Settings.SerializationType == SerializationType.Xml);
+    }
+
+    private void CreateContextMenuCornerSettings(ToolStrip menu)
+    {
+      var posMenu = GH_DocumentObject.Menu_AppendItem(menu, "Doc Warning Position");
+      var options = new List<(string, Corner)>
+      {
+        ("Top Left", Corner.TopLeft),
+        ("Top Right", Corner.TopRight),
+        ("Bottom Left", Corner.BottomLeft),
+        ("Bottom Right", Corner.BottomRight),
+      };
+      foreach (var (name, corner) in options)
+      {
+        GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, name,
+          (sender, args) => WidgetCornerChanged(corner),
+          null,
+          true,
+          Settings.Corner == corner
+        );
+      }
+    }
+
+    private static void CreateContextMenuSettings(ToolStrip menu, string name,
       double value, List<double> options, Action<double> onClick)
     {
       var item = GH_DocumentObject.Menu_AppendItem(menu, name);
@@ -142,12 +190,14 @@ namespace SizeAnalyzer.Widgets
 
       if (param == null)
       {
-        e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";
+        var total = Watcher.Calculator.GetTotal();
+        e.Description =
+          $"Document Threshold = {Settings.GlobalThreshold}mb\nTotal Internal Data size: {Math.Round(total, 2)}mb";
         return;
       }
 
-      var task = Calculator.Get(param);
-      if (!task.IsCompleted) return;
+      var task = Watcher.Calculator.Get(param);
+      if (task is { IsCompleted: false }) return;
 
       e.Title = "Warning: Internal data is too big";
       e.Text = "This parameter's data is TOO BIG.";
@@ -156,9 +206,6 @@ namespace SizeAnalyzer.Widgets
 
     public override void Render(GH_Canvas canvas)
     {
-      // Call the base render to continue drawing the "fixed" part of the widget
-      base.Render(canvas);
-
       if (canvas.Document == null) return;
       if (!Settings.ShowParamWarnings) return;
 
@@ -167,6 +214,9 @@ namespace SizeAnalyzer.Widgets
       DrawUtils.GetAllParamsWithLocalData(canvas.Document)
         .ToList()
         .ForEach(p => DrawParamIcon(canvas, p));
+
+      // Call the base render to continue drawing the "fixed" part of the widget
+      base.Render(canvas);
     }
 
     protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
@@ -174,38 +224,79 @@ namespace SizeAnalyzer.Widgets
     {
       if (Instances.ActiveCanvas.Document == null) return; // Skip if no document
       if (!Settings.ShowGlobalWarnings) return;
-      var total = Calculator.GetTotal();
+      var total = Watcher.Calculator.GetTotal();
       if (total < Settings.GlobalThreshold) return;
 
       _widgetArea = controlFrame; // Update the WidgetArea
 
       var graphics = canvas.Graphics; // Get the graphics instance
 
-      // Setup brushes and pens
-      var solidBrush = new SolidBrush(Color.Red);
-      var blackPen = new Pen(Color.Black);
-
       // To get it to draw fixed on the screen we must reset the canvas transform, and store it for later.
       var transform = canvas.Graphics.Transform;
-      var textCapsule = GH_Capsule.CreateTextCapsule(
-        controlFrame,
-        controlFrame,
-        GH_Palette.Warning, "Total size:\n" + Math.Round(total, 1) + "mb", new Font(FontFamily.GenericSansSerif, 15));
+
       graphics.ResetTransform();
 
-      textCapsule.Render(graphics, Color.Red);
+      //textCapsule.Render(graphics, Color.Red);
+      DrawWarningTriangle(controlFrame, graphics);
 
       // Once done, we reset the transform of the canvas.
       graphics.Transform = transform;
-      // Dispose all of our pens when done
-      blackPen.Dispose();
+    }
+
+    private static void DrawWarningTriangle(Rectangle controlFrame, Graphics graphics)
+    {
+      var outlineWidth = 5;
+      var textWidth = 10;
+      var solidBrush = new SolidBrush(Color.Red);
+      var nearBlack = Color.FromArgb(100, 0, 0, 0);
+      var shadowBrush = new SolidBrush(nearBlack);
+      var shadowPen = new Pen(nearBlack)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      var whitePen = new Pen(Color.White)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      var bottomLeft = new PointF(controlFrame.Left, controlFrame.Bottom);
+      var bottomRight = new PointF(controlFrame.Right, controlFrame.Bottom);
+      var height = Convert.ToSingle(controlFrame.Width * Math.Sqrt(3) / 2);
+      var top = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - height);
+
+      var path = new GraphicsPath();
+      path.AddPolygon(new[] { bottomLeft, top, bottomRight });
+      graphics.TranslateTransform(12, 7);
+      graphics.DrawPath(shadowPen, path);
+      graphics.ResetTransform();
+      graphics.FillPath(solidBrush, path);
+      graphics.DrawPath(whitePen, path);
+
+      var step = height / 10f;
+      var topExcl = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - height + step * 3);
+      var bottomExcl = new PointF(controlFrame.Left + controlFrame.Width / 2,
+        controlFrame.Bottom - height + step * 6.5f);
+
+      var topExclPt = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - step * 1.6f);
+      var bottomExclPt = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - step * 1.5f);
+
+      whitePen.Width = Global_Proc.UiAdjust(7);
+      graphics.DrawLine(whitePen, topExcl, bottomExcl);
+      graphics.DrawLine(whitePen, topExclPt, bottomExclPt);
+
       solidBrush.Dispose();
-      blackPen.Dispose();
+      whitePen.Dispose();
+      shadowBrush.Dispose();
     }
 
     private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
     {
-      var status = Calculator.GetParamStatus(p);
+      var status = Watcher.Calculator.GetParamStatus(p);
       switch (status)
       {
         case ParamStatus.Loading:
@@ -224,24 +315,54 @@ namespace SizeAnalyzer.Widgets
 
     private void DrawWarningIcon(GH_Canvas canvas, IGH_Param p)
     {
-      if (GH_Canvas.ZoomFadeLow == 0)
+      if (GH_Canvas.ZoomFadeLow < 255)
       {
         DrawUtils.DrawParamIcon_ZoomedOut(canvas, p);
       }
-      else
-      {
-        DrawUtils.DrawParamIcon(canvas, p, Radius);
-        _drawnIcons.Add(p);
-      }
+
+      DrawUtils.DrawParamIcon(canvas, p, Radius);
+      _drawnIcons.Add(p);
     }
 
     private void DrawLoadingIcon(GH_Canvas canvas, IGH_Param p)
     {
-      if (GH_Canvas.ZoomFadeLow != 0)
+      if (GH_Canvas.ZoomFadeHigh != 0)
       {
         DrawUtils.DrawLoadingIcon(canvas, p, Radius);
         _drawnIcons.Add(p);
       }
     }
+
+    private void WidgetCornerChanged(Corner corner)
+    {
+      switch (corner)
+      {
+        case Corner.TopLeft:
+          Ratio = new SizeF(0f, 0f);
+          break;
+        case Corner.TopRight:
+          Ratio = new SizeF(1f, 0f);
+          break;
+        case Corner.BottomLeft:
+          Ratio = new SizeF(0f, 1f);
+          break;
+        case Corner.BottomRight:
+          Ratio = new SizeF(1f, 1f);
+          break;
+        default:
+          throw new ArgumentOutOfRangeException(nameof(corner), corner, null);
+      }
+
+      Settings.Corner = corner;
+      Instances.InvalidateCanvas();
+    }
+  }
+
+  public enum Corner
+  {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight
   }
 }

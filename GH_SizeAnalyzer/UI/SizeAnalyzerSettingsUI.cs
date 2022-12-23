@@ -10,16 +10,16 @@ namespace SizeAnalyzer.UI
 {
   public class SizeAnalyzerSettingsUI : UserControl
   {
-    private CheckBox _checkShow;
-    private CheckBox _checkShowGlobal;
-    private CheckBox _checkShowParams;
+    private CheckBox? _checkShow;
+    private CheckBox? _checkShowGlobal;
+    private CheckBox? _checkShowParams;
 
-    private GH_DigitScroller _digitThreshold;
-    private GH_DigitScroller _digitThresholdGlobal;
-    private IContainer components;
-    private GH_Label label;
-    private TableLayoutPanel panel;
-    private ToolTip toolTip;
+    private GH_DigitScroller? _digitThreshold;
+    private GH_DigitScroller? _digitThresholdGlobal;
+    private IContainer? components;
+    private GH_Label? label;
+    private TableLayoutPanel? panel;
+    private ToolTip? toolTip;
 
     public SizeAnalyzerSettingsUI()
     {
@@ -28,7 +28,7 @@ namespace SizeAnalyzer.UI
       InitializeComponent();
     }
 
-    private GH_DigitScroller digitThresholdGlobal
+    private GH_DigitScroller? digitThresholdGlobal
     {
       get => _digitThresholdGlobal;
       set
@@ -43,7 +43,7 @@ namespace SizeAnalyzer.UI
     }
 
 
-    private CheckBox checkShow
+    private CheckBox? checkShow
     {
       get => _checkShow;
       set
@@ -57,7 +57,7 @@ namespace SizeAnalyzer.UI
       }
     }
 
-    private CheckBox checkShowGlobal
+    private CheckBox? checkShowGlobal
     {
       get => _checkShowGlobal;
       set
@@ -71,7 +71,7 @@ namespace SizeAnalyzer.UI
       }
     }
 
-    private CheckBox checkShowParams
+    private CheckBox? checkShowParams
     {
       get => _checkShowParams;
       set
@@ -85,7 +85,7 @@ namespace SizeAnalyzer.UI
       }
     }
 
-    internal virtual GH_DigitScroller digitThreshold
+    internal virtual GH_DigitScroller? digitThreshold
     {
       get => _digitThreshold;
       set
@@ -205,6 +205,7 @@ namespace SizeAnalyzer.UI
 
     private void OnWidgetGlobalThresholdChanged(double value)
     {
+      if (digitThresholdGlobal == null) return;
       digitThresholdGlobal.ValueChanged -= OnGlobalThresholdChanged;
       digitThresholdGlobal.Value = Convert.ToDecimal(value);
       digitThresholdGlobal.ValueChanged += OnGlobalThresholdChanged;
