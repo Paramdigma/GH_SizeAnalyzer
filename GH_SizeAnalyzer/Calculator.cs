@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using GH_IO;
 using GH_IO.Serialization;
 using Grasshopper;
 using Grasshopper.Kernel;
@@ -14,25 +15,43 @@ namespace SizeAnalyzer
   public class Calculator
   {
     private const int MaxDegreeOfParallelism = 4;
-    private CancellationTokenSource _cancelSource = new CancellationTokenSource();
-    private TaskFactory<double>? _factory;
-    private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
-    
+
+    private CancellationTokenSource _cancelSource;
+    private TaskFactory<double> _factory;
+    private Dictionary<Guid, Task<double>> _resultsCache;
+    private SerializationType _serializationType;
+
     public EventHandler? ComputeTaskFinished;
     public EventHandler? ParamTaskFinished;
 
-    public SerializationType SerializationType = SerializationType.Xml;
-
-    public Calculator()
+    public Calculator(SerializationType type)
     {
-      Reset();
+      _serializationType = type;
+      _resultsCache = new Dictionary<Guid, Task<double>>();
+      var scheduler = new LimitedConcurrencyLevelTaskScheduler(MaxDegreeOfParallelism);
+      _cancelSource = new CancellationTokenSource();
+      _factory = new TaskFactory<double>(
+        _cancelSource.Token,
+        TaskCreationOptions.None,
+        TaskContinuationOptions.None,
+        scheduler);
+    }
+
+    public SerializationType SerializationType
+    {
+      get => _serializationType;
+      set
+      {
+        _serializationType = value;
+        Reset();
+      }
     }
 
     private Task AddParameter(IGH_Param param)
     {
       if (param == null)
         throw new ArgumentNullException(nameof(param));
-      var task = _factory.StartNew(() => GetParamDataSize(param, SerializationType));
+      var task = _factory.StartNew(() => GetParamDataSize(param, _serializationType));
       var continuation = task.ContinueWith((t) => ParamTaskFinished?.Invoke(param, null), TaskScheduler.Default);
       if (_resultsCache.ContainsKey(param.InstanceGuid))
         _resultsCache[param.InstanceGuid] = task;
@@ -48,24 +67,8 @@ namespace SizeAnalyzer
         _resultsCache.Remove(param.InstanceGuid);
     }
 
-    public static void ObjectAction(IGH_DocumentObject docObject, Action<IGH_Param>? parameterAction,
-      Action<IGH_Component>? componentAction)
-    {
-      if (docObject == null) throw new ArgumentNullException(nameof(docObject));
-      switch (docObject)
-      {
-        case IGH_Param param:
-          parameterAction?.Invoke(param);
-          break;
-        case IGH_Component component:
-          componentAction?.Invoke(component);
-          if (parameterAction != null)
-            component.Params.Input.ForEach(parameterAction);
-          break;
-      }
-    }
-
     public void Add(IGH_DocumentObject docObject) => ObjectAction(docObject, p => AddParameter(p), null);
+
     public void Remove(IGH_DocumentObject docObject) => ObjectAction(docObject, RemoveParameter, null);
 
     public Task Compute(GH_Document doc)
@@ -78,7 +81,7 @@ namespace SizeAnalyzer
         .SelectMany(obj =>
         {
           _cancelSource.Token.ThrowIfCancellationRequested();
-          
+
           switch (obj)
           {
             case IGH_Param param:
@@ -107,19 +110,9 @@ namespace SizeAnalyzer
       _cancelSource = new CancellationTokenSource();
       _factory = new TaskFactory<double>(
         _cancelSource.Token,
-        TaskCreationOptions.None, 
-        TaskContinuationOptions.None, 
+        TaskCreationOptions.None,
+        TaskContinuationOptions.None,
         scheduler);
-      
-    }
-
-    private static ParamStatus GetTaskStatus(Task<double>? task)
-    {
-      if (task == null) return ParamStatus.Untracked;
-      if (task.IsCanceled || task.IsFaulted) return ParamStatus.Error;
-      if (task.IsCompleted)
-        return task.Result >= Settings.ParamThreshold ? ParamStatus.OverThreshold : ParamStatus.UnderThreshold;
-      return ParamStatus.Loading;
     }
 
     public ParamStatus GetParamStatus(IGH_Param p) => GetTaskStatus(Get(p));
@@ -139,6 +132,15 @@ namespace SizeAnalyzer
     public Task<double>? Get(IGH_Param param)
     {
       return !_resultsCache.ContainsKey(param.InstanceGuid) ? null : _resultsCache[param.InstanceGuid];
+    }
+
+    private static ParamStatus GetTaskStatus(Task<double>? task)
+    {
+      if (task == null) return ParamStatus.Untracked;
+      if (task.IsCanceled || task.IsFaulted) return ParamStatus.Error;
+      if (task.IsCompleted)
+        return task.Result >= Settings.ParamThreshold ? ParamStatus.OverThreshold : ParamStatus.UnderThreshold;
+      return ParamStatus.Loading;
     }
 
     private static IEnumerable<IGH_Param> GetComponentParamsWithLocalData(IGH_Component component)
@@ -164,7 +166,7 @@ namespace SizeAnalyzer
         }
     }
 
-    private static double GetParamDataSize(IGH_InstanceDescription param,
+    private static double GetParamDataSize(IGH_Param param,
       SerializationType serializationType = SerializationType.Binary)
     {
       var archive = new GH_Archive();
@@ -191,6 +193,23 @@ namespace SizeAnalyzer
       }
 
       return size;
+    }
+
+    public static void ObjectAction(IGH_DocumentObject docObject, Action<IGH_Param>? parameterAction,
+      Action<IGH_Component>? componentAction)
+    {
+      if (docObject == null) throw new ArgumentNullException(nameof(docObject));
+      switch (docObject)
+      {
+        case IGH_Param param:
+          parameterAction?.Invoke(param);
+          break;
+        case IGH_Component component:
+          componentAction?.Invoke(component);
+          if (parameterAction != null)
+            component.Params.Input.ForEach(parameterAction);
+          break;
+      }
     }
   }
 
