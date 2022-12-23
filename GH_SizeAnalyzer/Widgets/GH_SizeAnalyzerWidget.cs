@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -153,7 +153,7 @@ namespace SizeAnalyzer.Widgets
       }
     }
 
-    private static void CreateContextMenuSettings(ToolStripDropDownMenu menu, string name,
+    private static void CreateContextMenuSettings(ToolStrip menu, string name,
       double value, List<double> options, Action<double> onClick)
     {
       var item = GH_DocumentObject.Menu_AppendItem(menu, name);
@@ -189,7 +189,8 @@ namespace SizeAnalyzer.Widgets
 
       if (param == null)
       {
-        e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb";
+        var total = Watcher.Calculator.GetTotal();
+        e.Description = $"Document Threshold = {Settings.GlobalThreshold}mb\nTotal Internal Data size: {Math.Round(total, 2)}mb";
         return;
       }
 
