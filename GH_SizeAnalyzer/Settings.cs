@@ -11,9 +11,9 @@ namespace SizeAnalyzer
   public class Settings : IGH_SettingFrontend
   {
     public delegate void ThresholdChangedEventHandler(double threshold);
-
     public delegate void VisibleChangedEventHandler(bool visible);
     public delegate void WidgetCornerChangedEventHandler(Corner corner);
+    public delegate void SerialisationTypeChangedEventHandler(SerializationType type);
 
     
 
@@ -25,16 +25,17 @@ namespace SizeAnalyzer
     private static string _showGlobalKey => $"{_prefix}.ShowGlobal";
 
     private static string _widgetCornerKey => $"{_prefix}.Corner";
+    private static string _serialisationTypeKey => $"{_prefix}.Serialisation.Type";
 
     private static double _paramThreshold
     {
-      get => Instances.Settings.GetValue(_paramThresholdKey, 1);
+      get => Instances.Settings.GetValue(_paramThresholdKey, 1.00);
       set => Instances.Settings.SetValue(_paramThresholdKey, value);
     }
 
     private static double _globalThreshold
     {
-      get => Instances.Settings.GetValue(_globalThresholdKey, 10);
+      get => Instances.Settings.GetValue(_globalThresholdKey, 10.00);
       set => Instances.Settings.SetValue(_globalThresholdKey, value);
     }
 
@@ -60,6 +61,12 @@ namespace SizeAnalyzer
     {
       get => (Corner)Instances.Settings.GetValue(_widgetCornerKey, 0);
       set => Instances.Settings.SetValue(_widgetCornerKey, (int)value);
+    }
+
+    private static SerializationType _serialisationType
+    {
+      get => (SerializationType)Instances.Settings.GetValue(_serialisationTypeKey, 0);
+      set => Instances.Settings.SetValue(_serialisationTypeKey, (int)value);
     }
 
     public static bool Show
@@ -137,6 +144,19 @@ namespace SizeAnalyzer
         Instances.RedrawCanvas();
       }
     }
+    
+    public static SerializationType SerializationType
+    {
+      get => _serialisationType;
+      set
+      {
+        if (_serialisationType == value)
+          return;
+        _serialisationType = value;
+        SerialisationTypeChanged?.Invoke(value);
+        Instances.RedrawCanvas();
+      }
+    }
     public string Category => "Widgets";
 
     public string Name => "Size analyzer widget";
@@ -154,5 +174,6 @@ namespace SizeAnalyzer
     public static event ThresholdChangedEventHandler ParamThresholdChanged;
     public static event ThresholdChangedEventHandler GlobalThresholdChanged;
     public static event WidgetCornerChangedEventHandler WidgetCornerChanged;
+    public static event SerialisationTypeChangedEventHandler SerialisationTypeChanged;
   }
 }

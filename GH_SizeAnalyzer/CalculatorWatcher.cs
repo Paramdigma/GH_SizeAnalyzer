@@ -27,9 +27,15 @@ namespace SizeAnalyzer
 
     public CalculatorDocumentWatcher()
     {
-      Calculator = new Calculator();
+      Calculator = new Calculator(Settings.SerializationType);
       Calculator.ParamTaskFinished += (sender, args) => Instances.InvalidateCanvas();
       Calculator.ComputeTaskFinished += (sender, args) => Instances.InvalidateCanvas();
+      Settings.SerialisationTypeChanged += type =>
+      {
+        Calculator.SerializationType = type;
+        if(Instances.ActiveCanvas.Document != null)
+          Calculator.Compute(Instances.ActiveCanvas.Document);
+      };
     }
 
     public void Start()
