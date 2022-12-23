@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using Grasshopper;
 using Grasshopper.GUI;
 using SizeAnalyzer.UI;
+using SizeAnalyzer.Widgets;
 
 namespace SizeAnalyzer
 {
@@ -12,6 +13,9 @@ namespace SizeAnalyzer
     public delegate void ThresholdChangedEventHandler(double threshold);
 
     public delegate void VisibleChangedEventHandler(bool visible);
+    public delegate void WidgetCornerChangedEventHandler(Corner corner);
+
+    
 
     private static readonly string _prefix = "Widget.SizeAnalyzer";
     private static string _paramThresholdKey => $"{_prefix}.Threshold";
@@ -19,6 +23,8 @@ namespace SizeAnalyzer
     private static string _showKey => $"{_prefix}.Show";
     private static string _showParamKey => $"{_prefix}.ShowParam";
     private static string _showGlobalKey => $"{_prefix}.ShowGlobal";
+
+    private static string _widgetCornerKey => $"{_prefix}.Corner";
 
     private static double _paramThreshold
     {
@@ -48,6 +54,12 @@ namespace SizeAnalyzer
     {
       get => Instances.Settings.GetValue(_showGlobalKey, true);
       set => Instances.Settings.SetValue(_showGlobalKey, value);
+    }
+    
+    private static Corner _widgetCorner
+    {
+      get => (Corner)Instances.Settings.GetValue(_widgetCornerKey, 0);
+      set => Instances.Settings.SetValue(_widgetCornerKey, (int)value);
     }
 
     public static bool Show
@@ -113,6 +125,18 @@ namespace SizeAnalyzer
       }
     }
 
+    public static Corner Corner
+    {
+      get => _widgetCorner;
+      set
+      {
+        if (_widgetCorner == value)
+          return;
+        _widgetCorner = value;
+        WidgetCornerChanged?.Invoke(value);
+        Instances.RedrawCanvas();
+      }
+    }
     public string Category => "Widgets";
 
     public string Name => "Size analyzer widget";
@@ -129,5 +153,6 @@ namespace SizeAnalyzer
     public static event VisibleChangedEventHandler ShowGlobalWarningsChanged;
     public static event ThresholdChangedEventHandler ParamThresholdChanged;
     public static event ThresholdChangedEventHandler GlobalThresholdChanged;
+    public static event WidgetCornerChangedEventHandler WidgetCornerChanged;
   }
 }

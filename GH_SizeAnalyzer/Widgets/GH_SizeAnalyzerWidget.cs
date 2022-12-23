@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Windows.Forms;
 using Grasshopper;
@@ -26,6 +27,7 @@ namespace SizeAnalyzer.Widgets
 
     public GH_SizeAnalyzerWidget()
     {
+      WidgetCornerChanged(Settings.Corner);
     }
 
     public override bool Visible
@@ -44,12 +46,12 @@ namespace SizeAnalyzer.Widgets
     public override Bitmap Icon_24x24 => Resources.CalculatorIcon;
 
     // Defines which corner the widget will be drawn in
-    public override SizeF Ratio { get; set; } = new SizeF(0f, 1f);
+    public override SizeF Ratio { get; set; } = new SizeF(1f, 0f);
 
     // Defines the size of the controlRectangle to draw the widget in.
-    public override Size Size => new Size(Global_Proc.UiAdjust(200), Global_Proc.UiAdjust(60));
+    public override Size Size => new Size(Global_Proc.UiAdjust(80), (int)Global_Proc.UiAdjust(80 * (float)Math.Sqrt(3)/2f));
 
-    public override int Padding => 10;
+    public override int Padding => 50;
 
     public override bool TooltipEnabled => true;
 
@@ -103,8 +105,20 @@ namespace SizeAnalyzer.Widgets
         new List<double> { 1, 2, 5, 10 },
         (value) => Settings.ParamThreshold = value
       );
+      
+      GH_DocumentObject.Menu_AppendSeparator(menu);
+      var posMenu = GH_DocumentObject.Menu_AppendItem(menu, "Doc Warning Position");
+
+      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Top Left",
+        (sender, args) => WidgetCornerChanged(Corner.TopLeft));
+      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Top Rigth",
+        (sender, args) => WidgetCornerChanged(Corner.TopRight));
+      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Bottom Left",
+        (sender, args) => WidgetCornerChanged(Corner.BottomLeft));
+      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Bottom Right",
+        (sender, args) => WidgetCornerChanged(Corner.BottomRight));
     }
-    
+
     private static void CreateContextMenuSettings(ToolStripDropDownMenu menu, string name,
       double value, List<double> options, Action<double> onClick)
     {
@@ -179,27 +193,68 @@ namespace SizeAnalyzer.Widgets
       _widgetArea = controlFrame; // Update the WidgetArea
 
       var graphics = canvas.Graphics; // Get the graphics instance
-
-      // Setup brushes and pens
-      var solidBrush = new SolidBrush(Color.Red);
-      var blackPen = new Pen(Color.Black);
-
+      
       // To get it to draw fixed on the screen we must reset the canvas transform, and store it for later.
       var transform = canvas.Graphics.Transform;
-      var textCapsule = GH_Capsule.CreateTextCapsule(
-        controlFrame,
-        controlFrame,
-        GH_Palette.Warning, "Total size:\n" + Math.Round(total, 1) + "mb", new Font(FontFamily.GenericSansSerif, 15));
+      
       graphics.ResetTransform();
 
-      textCapsule.Render(graphics, Color.Red);
+      //textCapsule.Render(graphics, Color.Red);
+      DrawWarningTriangle(controlFrame, graphics);
 
       // Once done, we reset the transform of the canvas.
       graphics.Transform = transform;
-      // Dispose all of our pens when done
-      blackPen.Dispose();
+    }
+
+    private static void DrawWarningTriangle(Rectangle controlFrame, Graphics graphics)
+    {
+      var outlineWidth = 5;
+      var textWidth = 10;
+      var solidBrush = new SolidBrush(Color.Red);
+      var nearBlack = Color.FromArgb(100, 0, 0, 0);
+      var shadowBrush = new SolidBrush(nearBlack);
+      var shadowPen = new Pen(nearBlack)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      var whitePen = new Pen(Color.White)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      var bottomLeft = new PointF(controlFrame.Left, controlFrame.Bottom);
+      var bottomRight = new PointF(controlFrame.Right, controlFrame.Bottom);
+      var height = Convert.ToSingle(controlFrame.Width * Math.Sqrt(3) / 2);
+      var top = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - height);
+
+      var path = new GraphicsPath();
+      path.AddPolygon(new[] { bottomLeft, top, bottomRight });
+      graphics.TranslateTransform(12, 7);
+      graphics.DrawPath(shadowPen, path);
+      graphics.ResetTransform();
+      graphics.FillPath(solidBrush, path);
+      graphics.DrawPath(whitePen, path);
+
+      var step = height / 10f;
+      var topExcl = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - height + step * 3);
+      var bottomExcl = new PointF(controlFrame.Left + controlFrame.Width / 2,
+        controlFrame.Bottom - height + step * 6.5f);
+
+      var topExclPt = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - step * 1.6f);
+      var bottomExclPt = new PointF(controlFrame.Left + controlFrame.Width / 2, controlFrame.Bottom - step * 1.5f);
+
+      whitePen.Width = Global_Proc.UiAdjust(7);
+      graphics.DrawLine(whitePen, topExcl, bottomExcl);
+      graphics.DrawLine(whitePen, topExclPt, bottomExclPt);
+
       solidBrush.Dispose();
-      blackPen.Dispose();
+      whitePen.Dispose();
+      shadowBrush.Dispose();
     }
 
     private void DrawParamIcon(GH_Canvas canvas, IGH_Param p)
@@ -242,5 +297,37 @@ namespace SizeAnalyzer.Widgets
         _drawnIcons.Add(p);
       }
     }
+
+    private void WidgetCornerChanged(Corner corner)
+    {
+      switch (corner)
+      {
+        case Corner.TopLeft:
+          Ratio = new SizeF(0f, 0f);
+          break;
+        case Corner.TopRight:
+          Ratio = new SizeF(1f, 0f);
+          break;
+        case Corner.BottomLeft:
+          Ratio = new SizeF(0f, 1f);
+          break;
+        case Corner.BottomRight:
+          Ratio = new SizeF(1f, 1f);
+          break;
+        default:
+          throw new ArgumentOutOfRangeException(nameof(corner), corner, null);
+      }
+
+      Settings.Corner = corner;
+      Instances.InvalidateCanvas();
+    }
+  }
+  
+  public enum Corner
+  {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight
   }
 }
