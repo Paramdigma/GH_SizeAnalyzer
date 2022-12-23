@@ -43,13 +43,22 @@ namespace SizeAnalyzer.UI
       var r = GetParamIconRectangleF(p, radius);
       var whitesmoke = new Pen(Color.WhiteSmoke)
       {
-        Width = 2
+        Width = 2,
       };
+      var shadow = new Pen(Color.FromArgb(100, 0, 0, 0));
+      shadow.Width = 2;
+      shadow.Alignment = PenAlignment.Inset;
+      var r2 = new RectangleF(r.Location, r.Size);
+      r2.Offset(.4f,.4f);
+      r2.Inflate(1,1);
+      canvas.Graphics.DrawEllipse(shadow, r2);
       canvas.Graphics.DrawEllipse(whitesmoke, r);
       canvas.Graphics.FillEllipse(brush, r);
       whitesmoke.Width = 1;
-      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 1, r.Left + r.Width / 2, r.Bottom - 3);
-      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 2, r.Left + r.Width / 2, r.Bottom - 1);
+      whitesmoke.EndCap = LineCap.Round;
+      whitesmoke.StartCap = LineCap.Round;
+      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 1.3f, r.Left + r.Width / 2, r.Bottom - 3.3f);
+      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 1.4f, r.Left + r.Width / 2, r.Bottom - 1.3f);
     }
 
     public static RectangleF GetParamIconRectangleF(IGH_Param p, int radius)
@@ -185,23 +194,17 @@ namespace SizeAnalyzer.UI
     {
       var scroller = new GH_DigitScroller
       {
-        AllowRadixDrag = true,
-        AllowTextInput = true,
-        DecimalPlaces = 2,
-        Digits = 3,
+        DecimalPlaces = 3,
+        Digits = 5,
         Dock = DockStyle.Fill,
         Margin = new Padding(24, 0, 0, 0),
         MaximumValue = 100,
-        MinimumValue = 1,
+        MinimumValue = (decimal)0.01,
         Name = name,
         Prefix = prefix,
-        Radix = -1,
-        ShowTextInputOnDoubleClick = true,
-        ShowTextInputOnKeyDown = true,
+        AllowRadixDrag = false,
         Size = new Size(450, 28),
-        Suffix = suffix,
-        TabIndex = 5,
-        Value = new decimal(new int[4])
+        Suffix = suffix
       };
       return scroller;
     }
@@ -210,11 +213,12 @@ namespace SizeAnalyzer.UI
     {
       return new GH_DigitScroller
       {
+        Digits = 5,
         Height = 40,
         Width = 200,
-        DecimalPlaces = 0,
+        DecimalPlaces = 2,
         MaximumValue = 100,
-        MinimumValue = 1
+        MinimumValue = (decimal)0.01
       };
     }
   }
