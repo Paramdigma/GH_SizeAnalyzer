@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -169,8 +169,6 @@ namespace SizeAnalyzer.Widgets
 
     public override void Render(GH_Canvas canvas)
     {
-      // Call the base render to continue drawing the "fixed" part of the widget
-      base.Render(canvas);
 
       if (canvas.Document == null) return;
       if (!Settings.ShowParamWarnings) return;
@@ -180,6 +178,9 @@ namespace SizeAnalyzer.Widgets
       DrawUtils.GetAllParamsWithLocalData(canvas.Document)
         .ToList()
         .ForEach(p => DrawParamIcon(canvas, p));
+      
+      // Call the base render to continue drawing the "fixed" part of the widget
+      base.Render(canvas);
     }
 
     protected override void Render_Internal(GH_Canvas canvas, Point controlAnchor, PointF canvasAnchor,
