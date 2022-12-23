@@ -94,7 +94,7 @@ namespace SizeAnalyzer.Widgets
         menu,
         "Document threshold",
         Settings.GlobalThreshold,
-        new List<double> { 10, 20, 50, 100 },
+        new List<double> { 1, 2, 5, 10 },
         (value) => Settings.GlobalThreshold = value
       );
 
@@ -102,7 +102,7 @@ namespace SizeAnalyzer.Widgets
         menu,
         "Parameter threshold",
         Settings.ParamThreshold,
-        new List<double> { 1, 2, 5, 10 },
+        new List<double> { 0.1, 0.2, 0.5, 1 },
         (value) => Settings.ParamThreshold = value
       );
       
@@ -131,16 +131,26 @@ namespace SizeAnalyzer.Widgets
         true, 
         Settings.SerializationType == SerializationType.Xml);
     }
-      var posMenu = GH_DocumentObject.Menu_AppendItem(menu, "Doc Warning Position");
 
-      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Top Left",
-        (sender, args) => WidgetCornerChanged(Corner.TopLeft));
-      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Top Rigth",
-        (sender, args) => WidgetCornerChanged(Corner.TopRight));
-      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Bottom Left",
-        (sender, args) => WidgetCornerChanged(Corner.BottomLeft));
-      GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Bottom Right",
-        (sender, args) => WidgetCornerChanged(Corner.BottomRight));
+    private void CreateContextMenuCornerSettings(ToolStrip menu)
+    {
+      var posMenu = GH_DocumentObject.Menu_AppendItem(menu, "Doc Warning Position");
+      var options = new List<(string, Corner)>
+      {
+        ("Top Left", Corner.TopLeft),
+        ("Top Right", Corner.TopRight),
+        ("Bottom Left", Corner.BottomLeft),
+        ("Bottom Right", Corner.BottomRight),
+      };
+      foreach (var (name, corner) in options)
+      {
+        GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, name,
+          (sender, args) => WidgetCornerChanged(corner), 
+          null, 
+          true,
+          Settings.Corner == corner
+        );
+      }
     }
 
     private static void CreateContextMenuSettings(ToolStripDropDownMenu menu, string name,
