@@ -107,6 +107,30 @@ namespace SizeAnalyzer.Widgets
       );
       
       GH_DocumentObject.Menu_AppendSeparator(menu);
+      
+      CreateContextMenuCornerSettings(menu);
+
+      //CreateContextMenuSerialisationSettings(menu);
+    }
+
+    private static void CreateContextMenuSerialisationSettings(ToolStrip menu)
+    {
+      var parent = GH_DocumentObject.Menu_AppendItem(menu, "Serialisation Type");
+      GH_DocumentObject.Menu_AppendItem(
+        parent.DropDown, 
+        "Binary (.gh)", 
+        (sender, args) => Settings.SerializationType = SerializationType.Binary, 
+        null, 
+        true, 
+        Settings.SerializationType == SerializationType.Binary);
+      GH_DocumentObject.Menu_AppendItem(
+        parent.DropDown,
+        "XML (.gha)", 
+        (sender, args) => Settings.SerializationType = SerializationType.Xml,  
+        null, 
+        true, 
+        Settings.SerializationType == SerializationType.Xml);
+    }
       var posMenu = GH_DocumentObject.Menu_AppendItem(menu, "Doc Warning Position");
 
       GH_DocumentObject.Menu_AppendItem(posMenu.DropDown, "Top Left",
