@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -171,7 +171,12 @@ namespace SizeAnalyzer
     {
       var archive = new GH_Archive();
       archive.CreateTopLevelNode("param size archive");
-      archive.AppendObject(param, param.InstanceGuid.ToString());
+      if (param.VolatileData is GH_ISerializable data)
+        archive.AppendObject(data, param.InstanceGuid.ToString());
+      // Empty values where computed from an empty archive with a top level node only
+      // They're hardcoded here for efficiency, as Serialisation in GH is not likely to change ever.
+      const int emptyByteSize = 1094;
+      const int emptyBinarySize = 58;
 
       double size;
       switch (serializationType)
@@ -179,12 +184,12 @@ namespace SizeAnalyzer
         case SerializationType.Xml:
           var xml = archive.Serialize_Xml();
           var byteSize = (double)Encoding.Unicode.GetByteCount(xml);
-          size = byteSize / 1048576;
+          size = (byteSize - emptyByteSize) / 1048576;
           break;
 
         case SerializationType.Binary:
           var byteArray = archive.Serialize_Binary();
-          size = (double)byteArray.Length / 1048576;
+          size = ((double)byteArray.Length - emptyBinarySize) / 1048576;
           break;
 
         default:
