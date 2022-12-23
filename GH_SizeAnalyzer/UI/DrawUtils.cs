@@ -39,13 +39,18 @@ namespace SizeAnalyzer.UI
 
     public static void DrawParamIcon(GH_Canvas canvas, IGH_Param p, int radius)
     {
-      var brush = Brushes.Red;
+      var brush = new SolidBrush(Color.FromArgb(GH_Canvas.ZoomFadeLow, Color.Red));
       var r = GetParamIconRectangleF(p, radius);
-      var whitesmoke = new Pen(Color.WhiteSmoke)
+      var whitesmoke = new Pen(Color.FromArgb(GH_Canvas.ZoomFadeLow, Color.WhiteSmoke))
       {
         Width = 2,
       };
-      var shadow = new Pen(Color.FromArgb(100, 0, 0, 0));
+      var whitesmoke2 = new Pen(Color.FromArgb(GH_Canvas.ZoomFadeMedium, Color.WhiteSmoke))
+      {
+        EndCap = LineCap.Round,
+        StartCap = LineCap.Round
+      };
+      var shadow = new Pen(Color.FromArgb(Math.Min(100, GH_Canvas.ZoomFadeMedium), 0, 0, 0));
       shadow.Width = 2;
       shadow.Alignment = PenAlignment.Inset;
       var r2 = new RectangleF(r.Location, r.Size);
@@ -54,11 +59,12 @@ namespace SizeAnalyzer.UI
       canvas.Graphics.DrawEllipse(shadow, r2);
       canvas.Graphics.DrawEllipse(whitesmoke, r);
       canvas.Graphics.FillEllipse(brush, r);
-      whitesmoke.Width = 1;
-      whitesmoke.EndCap = LineCap.Round;
-      whitesmoke.StartCap = LineCap.Round;
-      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Top + 1.3f, r.Left + r.Width / 2, r.Bottom - 3.3f);
-      canvas.Graphics.DrawLine(whitesmoke, r.Left + r.Width / 2, r.Bottom - 1.4f, r.Left + r.Width / 2, r.Bottom - 1.3f);
+      canvas.Graphics.DrawLine(whitesmoke2, r.Left + r.Width / 2, r.Top + 1.3f, r.Left + r.Width / 2, r.Bottom - 3.3f);
+      canvas.Graphics.DrawLine(whitesmoke2, r.Left + r.Width / 2, r.Bottom - 1.4f, r.Left + r.Width / 2, r.Bottom - 1.3f);
+      whitesmoke.Dispose();
+      whitesmoke2.Dispose();
+      shadow.Dispose();
+      brush.Dispose();
     }
 
     public static RectangleF GetParamIconRectangleF(IGH_Param p, int radius)
@@ -110,7 +116,8 @@ namespace SizeAnalyzer.UI
     public static void DrawParamIcon_ZoomedOut(GH_Canvas canvas, IGH_Param p)
     {
       var rect = GH_Convert.ToRectangle(p.Attributes.Bounds);
-      canvas.Graphics.FillRectangle(Brushes.Red, rect);
+      var brush = new SolidBrush(Color.FromArgb(255 - GH_Canvas.ZoomFadeLow, Color.Red));
+      canvas.Graphics.FillRectangle(brush, rect);
     }
 
     public static void DrawDirArrow(Graphics g, RectangleF arrowBox, RectangleF targetBox)
