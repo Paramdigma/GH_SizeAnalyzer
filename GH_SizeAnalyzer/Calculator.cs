@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using GH_IO.Serialization;
 using Grasshopper;
@@ -12,19 +13,19 @@ namespace SizeAnalyzer
 {
   public class Calculator
   {
-    private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
-    private readonly TaskFactory<double> _factory;
     private const int MaxDegreeOfParallelism = 4;
-
-    public EventHandler? ParamTaskFinished;
+    private CancellationTokenSource _cancelSource = new CancellationTokenSource();
+    private TaskFactory<double>? _factory;
+    private Dictionary<Guid, Task<double>> _resultsCache = new Dictionary<Guid, Task<double>>();
+    
     public EventHandler? ComputeTaskFinished;
+    public EventHandler? ParamTaskFinished;
 
     public SerializationType SerializationType = SerializationType.Xml;
 
     public Calculator()
     {
-      var scheduler = new LimitedConcurrencyLevelTaskScheduler(MaxDegreeOfParallelism);
-      _factory = new TaskFactory<double>(scheduler);
+      Reset();
     }
 
     private Task AddParameter(IGH_Param param)
@@ -76,6 +77,8 @@ namespace SizeAnalyzer
       var tasks = GetAllDocumentObjectsWithLocalData(doc)
         .SelectMany(obj =>
         {
+          _cancelSource.Token.ThrowIfCancellationRequested();
+          
           switch (obj)
           {
             case IGH_Param param:
@@ -89,6 +92,25 @@ namespace SizeAnalyzer
         });
       return Task.WhenAll(tasks)
         .ContinueWith(res => ComputeTaskFinished?.Invoke(this, null), TaskScheduler.Default);
+    }
+
+    public void Cancel()
+    {
+      _cancelSource.Cancel();
+    }
+
+    public void Reset()
+    {
+      Cancel();
+      _resultsCache = new Dictionary<Guid, Task<double>>();
+      var scheduler = new LimitedConcurrencyLevelTaskScheduler(MaxDegreeOfParallelism);
+      _cancelSource = new CancellationTokenSource();
+      _factory = new TaskFactory<double>(
+        _cancelSource.Token,
+        TaskCreationOptions.None, 
+        TaskContinuationOptions.None, 
+        scheduler);
+      
     }
 
     private static ParamStatus GetTaskStatus(Task<double>? task)

@@ -18,6 +18,10 @@ namespace SizeAnalyzer
         if (IsWatching)
           throw new InvalidOperationException("Document cannot be changed while it's being watched");
         _document = value;
+        if (value != null)
+          Calculator.Compute(value);
+        else
+          Calculator.Reset();
       }
     }
 
@@ -40,7 +44,6 @@ namespace SizeAnalyzer
       foreach (var obj in _document.Objects)
         Calculator.ObjectAction(obj, Param_AddEvents, Component_AddEvents);
       IsWatching = true;
-      Calculator.Compute(_document);
     }
 
     public void Stop()
