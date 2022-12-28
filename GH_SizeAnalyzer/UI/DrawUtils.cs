@@ -54,13 +54,14 @@ namespace SizeAnalyzer.UI
       shadow.Width = 2;
       shadow.Alignment = PenAlignment.Inset;
       var r2 = new RectangleF(r.Location, r.Size);
-      r2.Offset(.4f,.4f);
-      r2.Inflate(1,1);
+      r2.Offset(.4f, .4f);
+      r2.Inflate(1, 1);
       canvas.Graphics.DrawEllipse(shadow, r2);
       canvas.Graphics.DrawEllipse(whitesmoke, r);
       canvas.Graphics.FillEllipse(brush, r);
       canvas.Graphics.DrawLine(whitesmoke2, r.Left + r.Width / 2, r.Top + 1.3f, r.Left + r.Width / 2, r.Bottom - 3.3f);
-      canvas.Graphics.DrawLine(whitesmoke2, r.Left + r.Width / 2, r.Bottom - 1.4f, r.Left + r.Width / 2, r.Bottom - 1.3f);
+      canvas.Graphics.DrawLine(whitesmoke2, r.Left + r.Width / 2, r.Bottom - 1.4f, r.Left + r.Width / 2,
+        r.Bottom - 1.3f);
       whitesmoke.Dispose();
       whitesmoke2.Dispose();
       shadow.Dispose();
@@ -118,6 +119,57 @@ namespace SizeAnalyzer.UI
       var rect = GH_Convert.ToRectangle(p.Attributes.Bounds);
       var brush = new SolidBrush(Color.FromArgb(255 - GH_Canvas.ZoomFadeLow, Color.Red));
       canvas.Graphics.FillRectangle(brush, rect);
+    }
+
+    public static void DrawWarningTriangle(Rectangle rect, Graphics graphics)
+    {
+      const int outlineWidth = 5;
+      var solidBrush = new SolidBrush(Color.Red);
+      var nearBlack = Color.FromArgb(100, 0, 0, 0);
+      var shadowBrush = new SolidBrush(nearBlack);
+      var shadowPen = new Pen(nearBlack)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      
+      var whitePen = new Pen(Color.White)
+      {
+        Width = Global_Proc.UiAdjust(outlineWidth),
+        StartCap = LineCap.Round,
+        EndCap = LineCap.Round,
+        LineJoin = LineJoin.Round,
+      };
+      var bottomLeft = new PointF(rect.Left, rect.Bottom);
+      var bottomRight = new PointF(rect.Right, rect.Bottom);
+      var height = Convert.ToSingle(rect.Width * Math.Sqrt(3) / 2);
+      var top = new PointF(rect.Left + rect.Width / 2, rect.Bottom - height);
+
+      var path = new GraphicsPath();
+      path.AddPolygon(new[] { bottomLeft, top, bottomRight });
+      graphics.TranslateTransform(12, 7);
+      graphics.DrawPath(shadowPen, path);
+      graphics.ResetTransform();
+      graphics.FillPath(solidBrush, path);
+      graphics.DrawPath(whitePen, path);
+
+      var step = height / 10f;
+      var topExcl = new PointF(rect.Left + rect.Width / 2, rect.Bottom - height + step * 3);
+      var bottomExcl = new PointF(rect.Left + rect.Width / 2,
+        rect.Bottom - height + step * 6.5f);
+
+      var topExclPt = new PointF(rect.Left + rect.Width / 2, rect.Bottom - step * 1.6f);
+      var bottomExclPt = new PointF(rect.Left + rect.Width / 2, rect.Bottom - step * 1.5f);
+
+      whitePen.Width = Global_Proc.UiAdjust(7);
+      graphics.DrawLine(whitePen, topExcl, bottomExcl);
+      graphics.DrawLine(whitePen, topExclPt, bottomExclPt);
+
+      solidBrush.Dispose();
+      whitePen.Dispose();
+      shadowBrush.Dispose();
     }
 
     public static void DrawDirArrow(Graphics g, RectangleF arrowBox, RectangleF targetBox)

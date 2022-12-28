@@ -8,7 +8,7 @@ namespace SizeAnalyzer
 {
   public class Loader : GH_AssemblyPriority
   {
-    public readonly GH_SizeAnalyzerWidget Widget = new GH_SizeAnalyzerWidget();
+    private static readonly GH_SizeAnalyzerWidget Widget = new GH_SizeAnalyzerWidget();
 
     public override GH_LoadingInstruction PriorityLoad()
     {
@@ -17,37 +17,22 @@ namespace SizeAnalyzer
       return GH_LoadingInstruction.Proceed;
     }
 
-    private void OnCanvasDestroyed(GH_Canvas canvas)
+    private static void OnCanvasDestroyed(GH_Canvas canvas)
     {
-      Instances.ActiveCanvas.DocumentChanged -= OnDocumentChanged;
+      Instances.ActiveCanvas.DocumentChanged -= Widget.OnDocumentChanged;
       Widget.Owner = null;
     }
 
-    public void OnCanvasCreated(GH_Canvas canvas)
+    private static void OnCanvasCreated(GH_Canvas canvas)
     {
       // Subscribe to all relevant events
-      Instances.ActiveCanvas.DocumentChanged += OnDocumentChanged;
+      Instances.ActiveCanvas.DocumentChanged += Widget.OnDocumentChanged;
 
       // Set the canvas as the widget's owner
       Widget.Owner = canvas;
       
       // Finally, add the widget to the canvas.
       Instances.ActiveCanvas.Widgets.Add(Widget);
-    }
-    
-    private void OnDocumentChanged(GH_Canvas c, GH_CanvasDocumentChangedEventArgs ce)
-    {
-      if (ce.OldDocument != null)
-      {
-        if (Widget.Watcher.IsWatching)
-          Widget.Watcher.Stop();
-        Widget.Watcher.Document = null;
-      }
-
-      if (ce.NewDocument == null) return;
-      
-      Widget.Watcher.Document = ce.NewDocument;
-      Widget.Watcher.Start();
     }
   }
 }
